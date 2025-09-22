@@ -3,6 +3,7 @@ using SOD.Common.BepInEx;
 using System.Reflection;
 using BepInEx.Configuration;
 using System.IO;
+using System.Diagnostics;
 namespace Dashboard
 {
     [BepInPlugin(PLUGIN_GUID, PLUGIN_NAME, PLUGIN_VERSION)]
@@ -15,6 +16,7 @@ namespace Dashboard
         public static ConfigEntry<bool> exampleConfigVariable;
         public static ConfigEntry<bool> EnableDashboardServer;
         public static ConfigEntry<int> DashboardPort;
+        public static ConfigEntry<bool> OpenBrowserOnStart;
 
         public override void Load()
         {
@@ -24,8 +26,6 @@ namespace Dashboard
             Harmony.PatchAll(Assembly.GetExecutingAssembly());
             SaveGameHandlers eventHandler = new SaveGameHandlers();
             Log.LogInfo("Plugin is patched.");
-
-            exampleConfigVariable = Config.Bind("General", "ExampleConfigVariable", false, new ConfigDescription("Example config description."));
 
             EnableDashboardServer = Config.Bind(
                 "Dashboard",
@@ -39,6 +39,12 @@ namespace Dashboard
                 17856,
                 new ConfigDescription("Port for the local dashboard web server (http://127.0.0.1:<Port>)."));
 
+            OpenBrowserOnStart = Config.Bind(
+                "Dashboard",
+                "OpenBrowserOnStart",
+                true,
+                new ConfigDescription("Open the default browser to the dashboard URL when the server starts."));
+
             if (EnableDashboardServer.Value)
             {
                 try
@@ -46,6 +52,20 @@ namespace Dashboard
                     var asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                     var wwwRoot = Path.Combine(asmDir ?? ".", "wwwroot");
                     LocalHttpServer.Instance.Start(DashboardPort.Value, wwwRoot);
+
+                    if (OpenBrowserOnStart.Value)
+                    {
+                        try
+                        {
+                            var url = $"http://127.0.0.1:{DashboardPort.Value}/";
+                            var psi = new ProcessStartInfo { FileName = url, UseShellExecute = true };
+                            Process.Start(psi);
+                        }
+                        catch (System.Exception ex2)
+                        {
+                            Log.LogWarning($"Failed to open browser: {ex2.Message}");
+                        }
+                    }
                 }
                 catch (System.Exception ex)
                 {
