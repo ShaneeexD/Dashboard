@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shadows of Doubt Dashboard</title>
+  <meta name="description" content="Local dashboard for Shadows of Doubt mod" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div class="title">Dashboard</div>
+      </div>
+      <nav class="nav">
+        <a class="nav-item active" data-view="home">
+          <span>Overview</span>
+        </a>
+        <a class="nav-item" data-view="npcs">
+          <span>NPCs</span>
+        </a>
+        <a class="nav-item" data-view="map">
+          <span>Map</span>
+        </a>
+        <a class="nav-item" data-view="stats">
+          <span>Stats</span>
+        </a>
+        <div class="spacer"></div>
+        <a class="nav-item" data-view="settings">
+          <span>Settings</span>
+        </a>
+      </nav>
+      <div class="status">
+        <div class="dot" id="health-dot"></div>
+        <div class="status-text" id="health-text">Connecting…</div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <h1 id="view-title">Overview</h1>
+        <div class="topbar-actions">
+          <button id="refresh-btn" class="btn">Refresh</button>
+        </div>
+      </header>
+
+      <section id="view-home" class="view active">
+        <div class="cards">
+          <div class="card">
+            <div class="card-title">Server</div>
+            <div class="metric">
+              <span class="metric-value" id="server-status">—</span>
+              <span class="metric-label">Status</span>
+            </div>
+            <div class="kv">
+              <div><span class="k">Port</span><span class="v" id="server-port">—</span></div>
+              <div><span class="k">Time</span><span class="v" id="server-time">—</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Game</div>
+            <div class="placeholder">Game data will appear here once wired.</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Quick Links</div>
+            <ul class="links">
+              <li><a href="/api/health" target="_blank">API: Health</a></li>
+              <li><a href="/api/info" target="_blank">API: Info</a></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-npcs" class="view">
+        <div class="section-header">
+          <h2>NPCs</h2>
+        </div>
+        <div class="placeholder">We will list NPCs here with search and filters.</div>
+      </section>
+
+      <section id="view-map" class="view">
+        <div class="section-header">
+          <h2>Map</h2>
+        </div>
+        <div class="placeholder">An interactive map will be embedded here.</div>
+      </section>
+
+      <section id="view-stats" class="view">
+        <div class="section-header">
+          <h2>Stats</h2>
+        </div>
+        <div class="placeholder">Graphs and KPIs about the current city and case.</div>
+      </section>
+
+      <section id="view-settings" class="view">
+        <div class="section-header">
+          <h2>Settings</h2>
+        </div>
+        <div class="placeholder">Configuration and theming options coming soon.</div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

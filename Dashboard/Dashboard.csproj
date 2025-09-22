@@ -1,0 +1,170 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+	<RestoreAdditionalProjectSources>
+		https://api.nuget.org/v3/index.json;
+		https://nuget.bepinex.dev/v3/index.json;
+	</RestoreAdditionalProjectSources>
+	<OutputType>Library</OutputType>
+	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lib.Harmony" Version="2.3.6" />
+    <PackageReference Include="SOD.Common" Version="2.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\..\..\SteamLibrary\steamapps\common\Shadows of Doubt\Shadows of Doubt_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="BepInEx.Core">
+      <HintPath>..\..\..\..\SteamLibrary\steamapps\common\Shadows of Doubt Mono\BepInEx\core\BepInEx.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="BepInEx.Harmony">
+      <HintPath>..\..\..\..\SteamLibrary\steamapps\common\Shadows of Doubt Mono\BepInEx\core\BepInEx.Harmony.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.Common">
+      <HintPath>..\..\..\..\SteamLibrary\steamapps\common\Shadows of Doubt\BepInEx\core\BepInEx.Unity.Common.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.IL2CPP">
+      <HintPath>C:\Users\shane\AppData\Roaming\r2modmanPlus-local\ShadowsofDoubt\profiles\NewBuild\BepInEx\core\BepInEx.Unity.IL2CPP.dll</HintPath>
+    </Reference>
+    <Reference Include="BepInEx.Unity.Mono">
+      <HintPath>..\..\..\..\SteamLibrary\steamapps\common\Shadows of Doubt\BepInEx\core\BepInEx.Unity.Mono.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FMODUnity">
+      <HintPath>FMODUnity.dll</HintPath>
+    </Reference>
+    <Reference Include="Il2CppMono.Security">
+      <HintPath>C:\Users\shane\AppData\Roaming\r2modmanPlus-local\ShadowsofDoubt\profiles\NewBuild\BepInEx\interop\Il2CppMono.Security.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>C:\Users\shane\AppData\Roaming\r2modmanPlus-local\ShadowsofDoubt\profiles\NewBuild\BepInEx\interop\Il2Cppmscorlib.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem">
+      <HintPath>C:\Users\shane\AppData\Roaming\r2modmanPlus-local\ShadowsofDoubt\profiles\NewBuild\BepInEx\interop\Il2CppSystem.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Configuration">
+      <HintPath>C:\Users\shane\AppData\Roaming\r2modmanPlus-local\ShadowsofDoubt\profiles\NewBuild\BepInEx\interop\Il2CppSystem.Configuration.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Core">
+      <HintPath>C:\Users\shane\AppData\Roaming\r2modmanPlus-local\ShadowsofDoubt\profiles\NewBuild\BepInEx\interop\Il2CppSystem.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Data">
+      <HintPath>C:\Users\shane\AppData\Roaming\r2modmanPlus-local\ShadowsofDoubt\profiles\NewBuild\BepInEx\interop\Il2CppSystem.Data.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Net.Http">
+      <HintPath>C:\Users\shane\AppData\Roaming\r2modmanPlus-local\ShadowsofDoubt\profiles\NewBuild\BepInEx\interop\Il2CppSystem.Net.Http.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Numerics">
+      <HintPath>C:\Users\shane\AppData\Roaming\r2modmanPlus-local\ShadowsofDoubt\profiles\NewBuild\BepInEx\interop\Il2CppSystem.Numerics.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Runtime.Serialization">
+      <HintPath>C:\Users\shane\AppData\Roaming\r2modmanPlus-local\ShadowsofDoubt\profiles\NewBuild\BepInEx\interop\Il2CppSystem.Runtime.Serialization.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Xml">
+      <HintPath>C:\Users\shane\AppData\Roaming\r2modmanPlus-local\ShadowsofDoubt\profiles\NewBuild\BepInEx\interop\Il2CppSystem.Xml.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Xml.Linq">
+      <HintPath>C:\Users\shane\AppData\Roaming\r2modmanPlus-local\ShadowsofDoubt\profiles\NewBuild\BepInEx\interop\Il2CppSystem.Xml.Linq.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ModLoggerLib">
+      <HintPath>ModLoggerLib.dll</HintPath>
+    </Reference>
+    <Reference Include="Rewired_Core">
+      <HintPath>Rewired_Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>UnityEngine.AudioModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\..\..\..\SteamLibrary\steamapps\common\Shadows of Doubt\Shadows of Doubt_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>UnityEngine.PhysicsModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>UnityEngine.TextRenderingModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>UnityEngine.UI.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIElementsModule">
+      <HintPath>UnityEngine.UIElementsModule.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIElementsNativeModule">
+      <HintPath>..\..\DevTools\DevTools\UnityEngine.UIElementsNativeModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>UnityEngine.UIModule.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="UnityEngine.UIModule.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="wwwroot\**\*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- Post-build deployment to r2modman profile plugins directory -->
+  <Target Name="PostBuildCopy" AfterTargets="Build">
+    <PropertyGroup>
+      <DeployDir>C:\Users\shane\AppData\Roaming\r2modmanPlus-local\ShadowsofDoubt\profiles\Mod Testing\BepInEx\plugins\ShaneeexD-Dashboard\</DeployDir>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(DeployDir)" />
+
+    <!-- Plugin files: DLL, optional PDB for debugging, optional icon -->
+    <ItemGroup>
+      <PluginFiles Include="$(TargetDir)$(TargetFileName)" />
+      <PluginFiles Include="$(TargetDir)$(TargetName).pdb" Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
+      <PluginFiles Include="$(ProjectDir)icon.png" Condition="Exists('$(ProjectDir)icon.png')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(DeployDir)" SkipUnchangedFiles="true" />
+
+    <!-- Static content: wwwroot -->
+    <ItemGroup>
+      <StaticFiles Include="$(TargetDir)wwwroot\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(StaticFiles)"
+          DestinationFiles="@(StaticFiles -> '$(DeployDir)wwwroot\\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

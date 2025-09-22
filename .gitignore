@@ -1,0 +1,65 @@
+# Root .gitignore for Shadows of Doubt Dashboard mod
+# Generated for a Visual Studio / .NET class library with static web assets
+
+# --- OS / miscellaneous ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+*.swo
+
+# --- IDE files ---
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# --- Build output ---
+[Bb]in/
+[Oo]bj/
+**/[Bb]in/
+**/[Oo]bj/
+Debug/
+Release/
+**/Debug/
+**/Release/
+TestResults/
+*.opendb
+
+# --- NuGet / Packages ---
+# Using PackageReference; no packages folder should be committed
+packages/
+*.nupkg
+*.snupkg
+
+# --- Coverage / analysis ---
+coverage/
+*.coverage*
+
+# --- Node / tooling (if used for dashboard assets) ---
+node_modules/
+
+# --- Game assets / local references ---
+# Do not commit local game files placed here for reference
+Game/
+
+# --- Local environment / secrets (add as needed) ---
+.env
+.env.*.local
+
+# --- r2modman output paths (in case any local copies end up inside repo) ---
+BepInEx/
+BepInEx*/
+plugins/
+
+# Notes:
+# - We intentionally DO NOT ignore *.dll globally because this repo may include
+#   reference assemblies needed for the mod to compile in certain setups.
+# - Static web assets under wwwroot/ are kept under source control.
