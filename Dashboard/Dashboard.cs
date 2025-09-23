@@ -15,8 +15,19 @@ using SOD.Common.Extensions;
 namespace Dashboard
 {
     [HarmonyPatch(typeof(Player), "Update")]
-    public class ExamplePatch
+    public class UpdatePlayerPatch
     {
-        
+        public static void Postfix()
+        {
+            try
+            {
+                if (SessionData.Instance != null)
+                {
+                    string timeText = SessionData.Instance.TimeAndDate(SessionData.Instance.gameTime, true, true, true);
+                    GameStateCache.SetTime(timeText);
+                }
+            }
+            catch { /* ignore */ }
+        }
     }
 }

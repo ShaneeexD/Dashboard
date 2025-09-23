@@ -86,19 +86,5 @@ namespace Dashboard
         {
             // No-op for now
         }
-
-        private void Update()
-        {
-            // Update in-game time text on the main thread
-            try
-            {
-                if (SessionData.Instance != null)
-                {
-                    string timeText = SessionData.Instance.TimeAndDate(SessionData.Instance.gameTime, true, true, true);
-                    GameStateCache.SetTime(timeText);
-                }
-            }
-            catch { /* ignore */ }
-        }
     }
 }
