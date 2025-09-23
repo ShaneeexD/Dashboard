@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 using BepInEx;
 using UnityEngine;
 
@@ -213,10 +214,14 @@ namespace Dashboard
             if (target.Equals("/api/npcs", StringComparison.OrdinalIgnoreCase))
             {
                 var list = NpcCache.Snapshot();
+                var ordered = list
+                    .OrderBy(n => n.name ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(n => n.surname ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
                 var sb = new StringBuilder();
                 sb.Append("[");
                 bool first = true;
-                foreach (var npc in list)
+                foreach (var npc in ordered)
                 {
                     if (!first) sb.Append(",\n");
                     first = false;

@@ -16,7 +16,6 @@ body{
   font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
   color:var(--text);
   background:radial-gradient(1200px 800px at 10% -20%, rgba(109,197,255,0.1), transparent 60%),
-             radial-gradient(1200px 800px at 120% 120%, rgba(122,243,197,0.08), transparent 60%),
              var(--bg);
 }
 
@@ -81,8 +80,11 @@ body{
 .input:focus{border-color:rgba(109,197,255,0.5)}
 
 /* NPC list */
+.npc-layout{display:grid; grid-template-columns:1fr 320px; gap:16px}
 .npc-list{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:12px}
 .npc-card{display:flex; gap:12px; align-items:center; padding:12px; border:1px solid var(--border); border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%), var(--card); box-shadow:var(--shadow)}
+.npc-card.clickable{cursor:pointer}
+.npc-card.selected{outline:2px solid var(--accent)}
 .npc-photo{width:56px; height:56px; border-radius:10px; overflow:hidden; background:rgba(30,30,40,0.8); display:grid; place-items:center; border:1px solid var(--border)}
 .npc-photo img{width:100%; height:100%; object-fit:contain; display:block}
 .npc-meta{display:flex; flex-direction:column; min-width:0}
@@ -91,9 +93,29 @@ body{
 .npc-hp{margin-top:6px; width:140px; height:8px; border-radius:6px; background:rgba(255,255,255,0.08); border:1px solid var(--border); overflow:hidden}
 .npc-hp-fill{height:100%; background:linear-gradient(90deg, #65d18f, #44b3ff); box-shadow:0 0 8px rgba(68,179,255,0.4) inset}
 
+/* Details panel */
+.npc-details{position:sticky; top:20px; align-self:start; border:1px solid var(--border); border-radius:12px; padding:14px; background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%), var(--card); box-shadow:var(--shadow)}
+.npc-details.hidden{display:none}
+.npc-details-header{display:flex; gap:12px; align-items:center; margin-bottom:12px}
+.npc-details-photo{width:72px; height:72px; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:rgba(30,30,40,0.8); display:grid; place-items:center}
+.npc-details-photo img{width:100%; height:100%; object-fit:contain}
+.npc-det-name{font-weight:700}
+.npc-det-surname{color:var(--muted); font-size:12px}
+.npc-det-hp{width:180px}
+.hidden{display:none}
+
+/* NPC full page */
+.npc-page{display:grid; grid-template-columns:120px 1fr; gap:16px}
+.npc-page .npc-details-photo{width:120px; height:120px}
+.npc-page .npc-det-hp{width:240px}
+.npc-page .npc-details-body{grid-column:1 / -1; margin-top:16px}
+
 @media (max-width: 900px){
   .layout{grid-template-columns:1fr}
   .sidebar{position:sticky; top:0; z-index:10; border-right:none; border-bottom:1px solid var(--border); flex-direction:row; align-items:center}
   .nav{flex-direction:row; overflow:auto}
   .status{border-top:none}
+  .npc-layout{grid-template-columns:1fr}
+  .npc-details{position:relative; top:auto}
+  .npc-page{grid-template-columns:1fr}
 }

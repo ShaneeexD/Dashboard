@@ -13,9 +13,15 @@
     refreshBtn: document.getElementById('refresh-btn'),
     npcList: document.getElementById('npc-list'),
     npcSearch: document.getElementById('npc-search'),
-    npcRefresh: document.getElementById('npc-refresh')
+    npcRefresh: document.getElementById('npc-refresh'),
+    npcDetails: document.getElementById('npc-details'),
+    npcDetPhoto: document.getElementById('npc-det-photo'),
+    npcDetName: document.getElementById('npc-det-name'),
+    npcDetSurname: document.getElementById('npc-det-surname'),
+    npcDetHpFill: document.getElementById('npc-det-hpfill')
   };
   let npcCache = [];
+  let selectedNpcId = null;
 
   function setActiveView(name){
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -85,7 +91,7 @@
     }
 
     const html = data.map(n => `
-      <div class="npc-card" title="${escapeHtml(n.name || '')}">
+      <div class="npc-card clickable" data-id="${n.id}" title="${escapeHtml(n.name || '')}">
         <div class="npc-photo">
           <img class="npc-img" loading="lazy" src="${n.photo || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottQAAAABJRU5ErkJggg=='}" alt="${escapeHtml(n.name || '')}"/>
         </div>
@@ -96,6 +102,12 @@
       </div>
     `).join('');
     els.npcList.innerHTML = html;
+    // Restore selection highlight after re-render
+    if(selectedNpcId != null){
+      const selCard = els.npcList.querySelector(`.npc-card[data-id="${selectedNpcId}"]`);
+      if(selCard) selCard.classList.add('selected');
+      updateDetailsIfSelected();
+    }
   }
 
   function hpPct(n){
@@ -112,6 +124,16 @@
 
   els.npcRefresh?.addEventListener('click', fetchNpcs);
   els.npcSearch?.addEventListener('input', () => renderNpcs());
+
+  // Click to open details in a new page
+  els.npcList?.addEventListener('click', (e) => {
+    const card = e.target.closest('.npc-card');
+    if(!card) return;
+    const id = Number(card.dataset.id);
+    if(!Number.isFinite(id)) return;
+    // Navigate to dedicated NPC page
+    window.location.href = `./npc.html?id=${id}`;
+  });
 
   // initial
   setActiveView('home');
