@@ -14,7 +14,7 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="brand">
-        <div class="logo">SD</div>
+        <div class="logo">SOD</div>
         <div class="title">Dashboard</div>
       </div>
       <nav class="nav">
@@ -80,7 +80,11 @@
         <div class="section-header">
           <h2>NPCs</h2>
         </div>
-        <div class="placeholder">We will list NPCs here with search and filters.</div>
+        <div class="toolbar">
+          <input id="npc-search" class="input" type="text" placeholder="Search by name or surname..." />
+          <button id="npc-refresh" class="btn">Refresh</button>
+        </div>
+        <div id="npc-list" class="npc-list"></div>
       </section>
 
       <section id="view-map" class="view">

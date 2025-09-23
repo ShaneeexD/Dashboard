@@ -75,6 +75,20 @@ body{
 .section-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px}
 .placeholder{color:var(--muted); border:1px dashed var(--border); padding:16px; border-radius:12px; background:rgba(255,255,255,0.02)}
 
+/* Toolbar & inputs */
+.toolbar{display:flex; gap:10px; align-items:center; margin:8px 0 16px}
+.input{flex:1; background:rgba(255,255,255,0.06); border:1px solid var(--border); color:var(--text); padding:10px 12px; border-radius:10px; outline:none}
+.input:focus{border-color:rgba(109,197,255,0.5)}
+
+/* NPC list */
+.npc-list{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:12px}
+.npc-card{display:flex; gap:12px; align-items:center; padding:12px; border:1px solid var(--border); border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%), var(--card); box-shadow:var(--shadow)}
+.npc-photo{width:56px; height:56px; border-radius:10px; overflow:hidden; background:rgba(30,30,40,0.8); display:grid; place-items:center; border:1px solid var(--border)}
+.npc-photo img{width:100%; height:100%; object-fit:contain; display:block}
+.npc-meta{display:flex; flex-direction:column; min-width:0}
+.npc-name{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.npc-surname{color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+
 @media (max-width: 900px){
   .layout{grid-template-columns:1fr}
   .sidebar{position:sticky; top:0; z-index:10; border-right:none; border-bottom:1px solid var(--border); flex-direction:row; align-items:center}

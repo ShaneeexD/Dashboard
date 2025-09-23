@@ -8,11 +8,19 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using BepInEx;
+using UnityEngine;
 
 namespace Dashboard
 {
     public sealed class LocalHttpServer
     {
+        // Simple 1x1 colored PNG for placeholders
+        private static readonly byte[] PlaceholderPng = Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottQAAAABJRU5ErkJggg==");
+        
+        // Simple 16x16 colored PNG for NPC photos
+        private static readonly byte[] DefaultNpcPng = Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAB3RJTUUH4wIIChAky9/vJAAAAChJREFUOMtjZGBgYBgFwwwwMTAwMDIyMjEwMDAxMTEzMzOPhoZhAADLrAEVZF+6PAAAAABJRU5ErkJggg==");
         private static readonly object _sync = new object();
         private static LocalHttpServer _instance;
         public static LocalHttpServer Instance
@@ -201,6 +209,25 @@ namespace Dashboard
                 return;
             }
 
+            // List NPCs
+            if (target.Equals("/api/npcs", StringComparison.OrdinalIgnoreCase))
+            {
+                var list = NpcCache.Snapshot();
+                var sb = new StringBuilder();
+                sb.Append("[");
+                bool first = true;
+                foreach (var npc in list)
+                {
+                    if (!first) sb.Append(",\n");
+                    first = false;
+                    sb.Append($"{{\"id\":{npc.id},\"name\":\"{JsonEscape(npc.name)}\",\"surname\":\"{JsonEscape(npc.surname)}\",\"photo\":\"{npc.photoBase64 ?? string.Empty}\"}}");
+                }
+                sb.Append("]");
+                WriteJson(writer, 200, sb.ToString());
+                return;
+            }
+
+
             WriteSimpleResponse(writer, 404, "Not Found", "Unknown API endpoint");
         }
 
@@ -291,6 +318,18 @@ namespace Dashboard
             writer.Write(body);
         }
 
+        private void WriteBinaryResponse(StreamWriter writer, string contentType, byte[] data)
+        {
+            WriteStatusLine(writer, 200, "OK");
+            WriteCommonHeaders(writer, contentType, data?.Length ?? 0);
+            if (data != null && data.Length > 0)
+            {
+                writer.Flush();
+                writer.BaseStream.Write(data, 0, data.Length);
+                writer.BaseStream.Flush();
+            }
+        }
+
         private void WriteStatusLine(StreamWriter writer, int status, string reason)
         {
             writer.WriteLine($"HTTP/1.1 {status} {reason}");
@@ -323,5 +362,12 @@ namespace Dashboard
                 _ => "OK"
             };
         }
+
+        private static string JsonEscape(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return string.Empty;
+            return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
+        }
+
     }
 }

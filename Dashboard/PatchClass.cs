@@ -4,6 +4,9 @@ using System.Reflection;
 using BepInEx.Configuration;
 using System.IO;
 using System.Diagnostics;
+using System;
+using System.Collections.Concurrent;
+using System.Threading;
 namespace Dashboard
 {
     [BepInPlugin(PLUGIN_GUID, PLUGIN_NAME, PLUGIN_VERSION)]
@@ -72,6 +75,57 @@ namespace Dashboard
                     Log.LogError($"Failed to start dashboard server: {ex}");
                 }
             }
+        }
+
+        // --- Main-thread dispatcher (IL2CPP-safe, no extra MonoBehaviour) ---
+        private static readonly ConcurrentQueue<Action> _mtQueue = new ConcurrentQueue<Action>();
+        private static int _mainThreadId;
+        private static bool IsMainThread => Thread.CurrentThread.ManagedThreadId == _mainThreadId;
+
+        private void Awake()
+        {
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+        }
+
+        private void Update()
+        {
+            while (_mtQueue.TryDequeue(out var act))
+            {
+                try { act?.Invoke(); }
+                catch (Exception ex) { Log.LogWarning($"MainThread action error: {ex.Message}"); }
+            }
+        }
+
+        public static void Enqueue(Action action)
+        {
+            if (action == null) return;
+            if (IsMainThread)
+            {
+                try { action(); } catch (Exception) { }
+            }
+            else
+            {
+                _mtQueue.Enqueue(action);
+            }
+        }
+
+        public static T RunSync<T>(Func<T> func, int timeoutMs = 3000)
+        {
+            if (func == null) throw new ArgumentNullException(nameof(func));
+            if (IsMainThread) return func();
+
+            var evt = new ManualResetEvent(false);
+            T result = default;
+            Exception error = null;
+            Enqueue(() =>
+            {
+                try { result = func(); }
+                catch (Exception ex) { error = ex; }
+                finally { evt.Set(); }
+            });
+            if (!evt.WaitOne(timeoutMs)) throw new TimeoutException("Plugin.RunSync timed out");
+            if (error != null) throw error;
+            return result;
         }
     }
 }

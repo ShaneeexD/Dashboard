@@ -10,8 +10,12 @@
     serverStatus: document.getElementById('server-status'),
     serverPort: document.getElementById('server-port'),
     serverTime: document.getElementById('server-time'),
-    refreshBtn: document.getElementById('refresh-btn')
+    refreshBtn: document.getElementById('refresh-btn'),
+    npcList: document.getElementById('npc-list'),
+    npcSearch: document.getElementById('npc-search'),
+    npcRefresh: document.getElementById('npc-refresh')
   };
+  let npcCache = [];
 
   function setActiveView(name){
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -24,6 +28,11 @@
       stats: 'Stats',
       settings: 'Settings'
     })[name] || 'Overview';
+
+    if(name === 'npcs'){
+      // lazy load when entering NPCs view
+      if(npcCache.length === 0) fetchNpcs();
+    }
   }
 
   els.navItems.forEach(i => i.addEventListener('click', e => {
@@ -50,6 +59,51 @@
   }
 
   els.refreshBtn.addEventListener('click', () => fetchHealth());
+
+  // NPCs
+  async function fetchNpcs(){
+    try{
+      const res = await fetch('/api/npcs', { cache: 'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      npcCache = await res.json();
+      renderNpcs();
+    }catch(err){
+      if(els.npcList){
+        els.npcList.innerHTML = '<div class="placeholder">Failed to load NPCs</div>';
+      }
+    }
+  }
+
+  function renderNpcs(){
+    if(!els.npcList) return;
+    const q = (els.npcSearch?.value || '').trim().toLowerCase();
+    const data = npcCache.filter(n => !q || (n.name?.toLowerCase().includes(q) || n.surname?.toLowerCase().includes(q)));
+
+    if(data.length === 0){
+      els.npcList.innerHTML = '<div class="placeholder">No NPCs found.</div>';
+      return;
+    }
+
+    const html = data.map(n => `
+      <div class="npc-card" title="${escapeHtml(n.name || '')}">
+        <div class="npc-photo">
+          <img class="npc-img" loading="lazy" src="${n.photo || 'placeholder.png'}" alt="${escapeHtml(n.name || '')}"/>
+        </div>
+        <div class="npc-meta">
+          <div class="npc-name">${escapeHtml(n.name || '')}</div>
+          <div class="npc-surname">${escapeHtml(n.surname || '')}</div>
+        </div>
+      </div>
+    `).join('');
+    els.npcList.innerHTML = html;
+  }
+
+  function escapeHtml(s){
+    return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+  }
+
+  els.npcRefresh?.addEventListener('click', fetchNpcs);
+  els.npcSearch?.addEventListener('input', () => renderNpcs());
 
   // initial
   setActiveView('home');

@@ -107,6 +107,10 @@
       <HintPath>..\..\..\..\SteamLibrary\steamapps\common\Shadows of Doubt\Shadows of Doubt_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>..\..\..\..\SteamLibrary\steamapps\common\Shadows of Doubt\Shadows of Doubt_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="UnityEngine.PhysicsModule">
       <HintPath>UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
