@@ -225,7 +225,7 @@ namespace Dashboard
                 {
                     if (!first) sb.Append(",\n");
                     first = false;
-                    sb.Append($"{{\"id\":{npc.id},\"name\":\"{JsonEscape(npc.name)}\",\"surname\":\"{JsonEscape(npc.surname)}\",\"photo\":\"{npc.photoBase64 ?? string.Empty}\",\"hpCurrent\":{npc.hpCurrent.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"hpMax\":{npc.hpMax.ToString(System.Globalization.CultureInfo.InvariantCulture)} }}");
+                    sb.Append($"{{\"id\":{npc.id},\"name\":\"{JsonEscape(npc.name)}\",\"surname\":\"{JsonEscape(npc.surname)}\",\"photo\":\"{npc.photoBase64 ?? string.Empty}\",\"hpCurrent\":{npc.hpCurrent.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"hpMax\":{npc.hpMax.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"employer\":\"{JsonEscape(npc.employer)}\",\"jobTitle\":\"{JsonEscape(npc.jobTitle)}\",\"salary\":\"{JsonEscape(npc.salary)}\",\"homeAddress\":\"{JsonEscape(npc.homeAddress)}\" }}");
                 }
                 sb.Append("]");
                 WriteJson(writer, 200, sb.ToString());

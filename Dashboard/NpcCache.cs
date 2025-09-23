@@ -16,6 +16,10 @@ namespace Dashboard
             public string photoBase64;
             public float hpCurrent;
             public float hpMax;
+            public string employer;
+            public string jobTitle;
+            public string salary;
+            public string homeAddress;
         }
 
         private static readonly object _lock = new object();
@@ -72,7 +76,11 @@ namespace Dashboard
                             surname = citizen.GetSurName(),
                             photoBase64 = GetPhotoBase64(citizen),
                             hpCurrent = (citizen is Actor a1) ? a1.currentHealth : 0f,
-                            hpMax = (citizen is Actor a2) ? a2.maximumHealth : 0f
+                            hpMax = (citizen is Actor a2) ? a2.maximumHealth : 0f,
+                            employer = citizen.job?.employer?.name?.ToString() ?? "",
+                            jobTitle = citizen.job?.name?.ToString() ?? "",
+                            salary = citizen.job?.salaryString?.ToString() ?? "",
+                            homeAddress = citizen.home?.thisAsAddress?.name?.ToString() ?? ""
                         };
                         list.Add(info);
                     }

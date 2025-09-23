@@ -114,6 +114,13 @@ body{
 .npc-page .npc-det-hp{width:240px}
 .npc-page .npc-details-body{grid-column:1 / -1; margin-top:16px}
 
+/* NPC detail sections */
+.detail-section{margin:16px 0; padding:16px; border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,0.02)}
+.detail-section h3{margin:0 0 12px; font-size:16px; color:var(--accent)}
+.detail-row{display:flex; margin:8px 0}
+.detail-label{width:100px; color:var(--muted); font-size:14px}
+.detail-value{flex:1; font-size:14px}
+
 @media (max-width: 900px){
   .layout{grid-template-columns:1fr}
   .sidebar{position:sticky; top:0; z-index:10; border-right:none; border-bottom:1px solid var(--border); flex-direction:row; align-items:center}

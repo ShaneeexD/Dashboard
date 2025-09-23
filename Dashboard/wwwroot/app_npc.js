@@ -8,7 +8,11 @@
     name: document.getElementById('npc-det-name'),
     hpText: document.getElementById('npc-det-hptext'),
     hpFill: document.getElementById('npc-det-hpfill'),
-    title: document.getElementById('view-title')
+    title: document.getElementById('view-title'),
+    employer: document.getElementById('npc-employer'),
+    job: document.getElementById('npc-job'),
+    salary: document.getElementById('npc-salary'),
+    address: document.getElementById('npc-address')
   };
 
   const params = new URLSearchParams(location.search);
@@ -64,6 +68,14 @@
         els.hpText.classList.remove('hp-high','hp-med','hp-low');
         els.hpText.classList.add(pct >= 66 ? 'hp-high' : pct >= 33 ? 'hp-med' : 'hp-low');
       }
+      
+      // Job information
+      if (els.employer) els.employer.textContent = n.employer || '—';
+      if (els.job) els.job.textContent = n.jobTitle || '—';
+      if (els.salary) els.salary.textContent = n.salary || '—';
+      
+      // Home address
+      if (els.address) els.address.textContent = n.homeAddress || '—';
     }catch{}
   }
 
