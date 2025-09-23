@@ -6,7 +6,7 @@
     text: document.getElementById('health-text'),
     photo: document.getElementById('npc-det-photo'),
     name: document.getElementById('npc-det-name'),
-    surname: document.getElementById('npc-det-surname'),
+    hpText: document.getElementById('npc-det-hptext'),
     hpFill: document.getElementById('npc-det-hpfill'),
     title: document.getElementById('view-title')
   };
@@ -43,15 +43,27 @@
       const n = list.find(x => x.id === npcId);
       if(!n) return;
       
-      // Update page title
-      document.title = `${n.name || ''} ${n.surname || ''} - NPC Details`;
-      if(els.title) els.title.textContent = `${n.name || ''} ${n.surname || ''}`;
+      // Update page title - only use name
+      document.title = `${n.name || 'NPC'} - NPC Details`;
+      if(els.title) els.title.textContent = n.name || 'NPC';
       
       // Update details
       els.photo.src = n.photo || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottQAAAABJRU5ErkJggg==';
       els.name.textContent = n.name || '—';
-      els.surname.textContent = n.surname || '';
-      els.hpFill.style.width = hpPct(n) + '%';
+      
+      // HP bar and text with color coding
+      const cur = Number(n.hpCurrent)||0;
+      const max = Number(n.hpMax)||0;
+      const pct = Number(hpPct(n));
+      els.hpFill.style.width = pct + '%';
+      
+      // HP text with color level
+      if (els.hpText) {
+        // Scale by 100 to show 0-100 range
+        els.hpText.textContent = `${Math.round(cur * 100)}/${Math.round(max * 100)} HP`;
+        els.hpText.classList.remove('hp-high','hp-med','hp-low');
+        els.hpText.classList.add(pct >= 66 ? 'hp-high' : pct >= 33 ? 'hp-med' : 'hp-low');
+      }
     }catch{}
   }
 

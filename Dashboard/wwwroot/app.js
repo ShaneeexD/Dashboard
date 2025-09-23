@@ -97,6 +97,7 @@
         </div>
         <div class="npc-meta">
           <div class="npc-name">${escapeHtml(n.name || '')}</div>
+          <div class="npc-hptext ${hpClass(n)}">${hpText(n)}</div>
           <div class="npc-hp"><div class="npc-hp-fill" style="width:${hpPct(n)}%"></div></div>
         </div>
       </div>
@@ -116,6 +117,18 @@
     if(max <= 0) return 0;
     const pct = Math.max(0, Math.min(100, (cur/max)*100));
     return pct.toFixed(0);
+  }
+  
+  function hpText(n){
+    const cur = Number(n.hpCurrent)||0;
+    const max = Number(n.hpMax)||0;
+    // Scale by 100 to show 0-100 range
+    return `${Math.round(cur * 100)}/${Math.round(max * 100)} HP`;
+  }
+  
+  function hpClass(n){
+    const p = Number(hpPct(n));
+    return p >= 66 ? 'hp-high' : p >= 33 ? 'hp-med' : 'hp-low';
   }
 
   function escapeHtml(s){

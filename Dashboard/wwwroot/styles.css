@@ -90,6 +90,10 @@ body{
 .npc-meta{display:flex; flex-direction:column; min-width:0}
 .npc-name{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .npc-surname{display:none}
+.npc-hptext{font-size:12px; margin-top:4px}
+.hp-high{color:#65d18f}
+.hp-med{color:#e0c15a}
+.hp-low{color:#e05555}
 .npc-hp{margin-top:6px; width:140px; height:8px; border-radius:6px; background:rgba(255,255,255,0.08); border:1px solid var(--border); overflow:hidden}
 .npc-hp-fill{height:100%; background:linear-gradient(90deg, #65d18f, #44b3ff); box-shadow:0 0 8px rgba(68,179,255,0.4) inset}
 
@@ -100,7 +104,7 @@ body{
 .npc-details-photo{width:72px; height:72px; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:rgba(30,30,40,0.8); display:grid; place-items:center}
 .npc-details-photo img{width:100%; height:100%; object-fit:contain}
 .npc-det-name{font-weight:700}
-.npc-det-surname{color:var(--muted); font-size:12px}
+.npc-det-hptext{font-size:14px; margin:4px 0}
 .npc-det-hp{width:180px}
 .hidden{display:none}
 
