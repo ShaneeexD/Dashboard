@@ -10,6 +10,7 @@
     serverStatus: document.getElementById('server-status'),
     serverPort: document.getElementById('server-port'),
     serverTime: document.getElementById('server-time'),
+    gameSave: document.getElementById('game-save'),
     refreshBtn: document.getElementById('refresh-btn'),
     npcList: document.getElementById('npc-list'),
     npcSearch: document.getElementById('npc-search'),
@@ -60,17 +61,33 @@
       const data = await res.json();
       els.healthDot.style.background = '#11d67a';
       els.healthText.textContent = 'Online';
+      els.healthText.className = 'status-text status-online';
       els.serverStatus.textContent = 'Online';
+      els.serverStatus.className = 'v status-online';
       els.serverPort.textContent = data.port ?? '—';
       els.serverTime.textContent = new Date(data.time || Date.now()).toLocaleString();
     }catch(err){
       els.healthDot.style.background = '#e05555';
       els.healthText.textContent = 'Offline';
+      els.healthText.className = 'status-text status-offline';
       els.serverStatus.textContent = 'Offline';
+      els.serverStatus.className = 'v status-offline';
     }
   }
 
-  els.refreshBtn.addEventListener('click', () => fetchHealth());
+  // Fetch current save name
+  async function fetchGame(){
+    try{
+      const res = await fetch('/api/game', { cache: 'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if(els.gameSave) els.gameSave.textContent = data.saveName || '—';
+    }catch(err){
+      if(els.gameSave) els.gameSave.textContent = '—';
+    }
+  }
+
+  els.refreshBtn.addEventListener('click', () => { fetchHealth(); fetchGame(); });
 
   // NPCs
   async function fetchNpcs(){
@@ -164,7 +181,9 @@
   // initial
   setActiveView(getInitialView());
   fetchHealth();
+  fetchGame();
   setInterval(fetchHealth, 5000);
+  setInterval(fetchGame, 5000);
   // Poll NPCs periodically when on NPCs view
   setInterval(() => {
     const isOnNpcs = document.getElementById('view-npcs')?.classList.contains('active');

@@ -65,7 +65,10 @@ body{
 .metric-value{font-size:26px; font-weight:700}
 .metric-label{font-size:12px; color:var(--muted)}
 .kv{display:grid; gap:6px}
-.kv .k{color:var(--muted)} .kv .v{font-variant-numeric:tabular-nums}
+.kv .k{color:var(--muted); min-width:60px} 
+.kv .v{font-variant-numeric:tabular-nums}
+.status-online{color:#11d67a; font-weight:500}
+.status-offline{color:#e05555; font-weight:500}
 .links{list-style:none; padding:0; margin:8px 0 0}
 .links li{margin:6px 0}
 .links a{color:var(--accent); text-decoration:none}

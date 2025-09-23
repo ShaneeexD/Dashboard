@@ -210,6 +210,23 @@ namespace Dashboard
                 return;
             }
 
+            // Game info
+            if (target.Equals("/api/game", StringComparison.OrdinalIgnoreCase))
+            {
+                string save = "DEFAULT_SAVE";
+                try
+                {
+                    if (RestartSafeController.Instance != null && RestartSafeController.Instance.saveStateFileInfo != null)
+                    {
+                        save = RestartSafeController.Instance.saveStateFileInfo.Name ?? "DEFAULT_SAVE";
+                    }
+                }
+                catch { /* ignore */ }
+                string json = $"{{\"saveName\":\"{JsonEscape(save)}\"}}";
+                WriteJson(writer, 200, json);
+                return;
+            }
+
             // List NPCs
             if (target.Equals("/api/npcs", StringComparison.OrdinalIgnoreCase))
             {
