@@ -25,6 +25,15 @@ namespace Dashboard
             {
                 NpcCache.ClearPhotoCache();
                 NpcCache.RebuildFromGame();
+
+                // Populate base game info on main thread
+                string save = "DEFAULT_SAVE";
+                try { if (RestartSafeController.Instance != null && RestartSafeController.Instance.saveStateFileInfo != null) save = RestartSafeController.Instance.saveStateFileInfo.Name ?? "DEFAULT_SAVE"; } catch {}
+                string mo = string.Empty;
+                try { if (MurderController.Instance != null && MurderController.Instance.chosenMO != null) mo = MurderController.Instance.chosenMO.name; } catch {}
+                string city = string.Empty;
+                try { if (CityData.Instance != null && !string.IsNullOrEmpty(CityData.Instance.cityName)) city = CityData.Instance.cityName; } catch {}
+                GameStateCache.SetBaseInfo(save, mo, city);
             }
             catch (Exception ex)
             {
@@ -38,6 +47,15 @@ namespace Dashboard
             {
                 NpcCache.ClearPhotoCache();
                 NpcCache.RebuildFromGame();
+
+                // Populate base game info on main thread
+                string save = "DEFAULT_SAVE";
+                try { if (RestartSafeController.Instance != null && RestartSafeController.Instance.saveStateFileInfo != null) save = RestartSafeController.Instance.saveStateFileInfo.Name ?? "DEFAULT_SAVE"; } catch {}
+                string mo = string.Empty;
+                try { if (MurderController.Instance != null && MurderController.Instance.chosenMO != null) mo = MurderController.Instance.chosenMO.name; } catch {}
+                string city = string.Empty;
+                try { if (CityData.Instance != null && !string.IsNullOrEmpty(CityData.Instance.cityName)) city = CityData.Instance.cityName; } catch {}
+                GameStateCache.SetBaseInfo(save, mo, city);
             }
             catch (Exception ex)
             {
@@ -67,6 +85,20 @@ namespace Dashboard
         private void HandleGameAfterDelete(object sender, EventArgs e)
         {
             // No-op for now
+        }
+
+        private void Update()
+        {
+            // Update in-game time text on the main thread
+            try
+            {
+                if (SessionData.Instance != null)
+                {
+                    string timeText = SessionData.Instance.TimeAndDate(SessionData.Instance.gameTime, true, true, true);
+                    GameStateCache.SetTime(timeText);
+                }
+            }
+            catch { /* ignore */ }
         }
     }
 }

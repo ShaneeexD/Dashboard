@@ -210,19 +210,11 @@ namespace Dashboard
                 return;
             }
 
-            // Game info
+            // Game info (read from cache only; do not touch Unity APIs on this thread)
             if (target.Equals("/api/game", StringComparison.OrdinalIgnoreCase))
             {
-                string save = "DEFAULT_SAVE";
-                try
-                {
-                    if (RestartSafeController.Instance != null && RestartSafeController.Instance.saveStateFileInfo != null)
-                    {
-                        save = RestartSafeController.Instance.saveStateFileInfo.Name ?? "DEFAULT_SAVE";
-                    }
-                }
-                catch { /* ignore */ }
-                string json = $"{{\"saveName\":\"{JsonEscape(save)}\"}}";
+                var snap = GameStateCache.Snapshot();
+                string json = $"{{\"saveName\":\"{JsonEscape(snap.save)}\",\"murderMO\":\"{JsonEscape(snap.mo)}\",\"timeText\":\"{JsonEscape(snap.time)}\",\"cityName\":\"{JsonEscape(snap.city)}\",\"ready\":{(snap.ready ? "true" : "false")} }}";
                 WriteJson(writer, 200, json);
                 return;
             }

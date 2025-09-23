@@ -94,6 +94,17 @@ namespace Dashboard
                 try { act?.Invoke(); }
                 catch (Exception ex) { Log.LogWarning($"MainThread action error: {ex.Message}"); }
             }
+
+            // Keep GameStateCache time fresh (safe: runs on main thread)
+            try
+            {
+                if (SessionData.Instance != null)
+                {
+                    string timeText = SessionData.Instance.TimeAndDate(SessionData.Instance.gameTime, true, true, true);
+                    GameStateCache.SetTime(timeText);
+                }
+            }
+            catch { /* ignore */ }
         }
 
         public static void Enqueue(Action action)

@@ -11,6 +11,9 @@
     serverPort: document.getElementById('server-port'),
     serverTime: document.getElementById('server-time'),
     gameSave: document.getElementById('game-save'),
+    gameCity: document.getElementById('game-city'),
+    gameTime: document.getElementById('game-time'),
+    gameMo: document.getElementById('game-mo'),
     refreshBtn: document.getElementById('refresh-btn'),
     npcList: document.getElementById('npc-list'),
     npcSearch: document.getElementById('npc-search'),
@@ -82,8 +85,14 @@
       if(!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       if(els.gameSave) els.gameSave.textContent = data.saveName || '—';
+      if(els.gameCity) els.gameCity.textContent = data.cityName || '—';
+      if(els.gameTime) els.gameTime.textContent = data.timeText || '—';
+      if(els.gameMo) els.gameMo.textContent = data.murderMO || '—';
     }catch(err){
       if(els.gameSave) els.gameSave.textContent = '—';
+      if(els.gameCity) els.gameCity.textContent = '—';
+      if(els.gameTime) els.gameTime.textContent = '—';
+      if(els.gameMo) els.gameMo.textContent = '—';
     }
   }
 
