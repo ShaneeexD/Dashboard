@@ -13,7 +13,11 @@
       <div class="brand"><div class="logo">SOD</div><div class="title">Dashboard</div></div>
       <nav class="nav">
         <a class="nav-item" href="./index.html" data-view="home"><span>Overview</span></a>
-        <a class="nav-item active" href="./index.html#npcs" data-view="npcs"><span>NPCs</span></a>
+        <a class="nav-item active" href="./index.html?view=npcs" data-view="npcs"><span>NPCs</span></a>
+        <a class="nav-item" href="./index.html?view=map" data-view="map"><span>Map</span></a>
+        <a class="nav-item" href="./index.html?view=stats" data-view="stats"><span>Stats</span></a>
+        <div class="spacer"></div>
+        <a class="nav-item" href="./index.html?view=settings" data-view="settings"><span>Settings</span></a>
       </nav>
       <div class="status"><div class="dot" id="health-dot"></div><div class="status-text" id="health-text">—</div></div>
     </aside>
@@ -21,7 +25,7 @@
     <main class="content">
       <header class="topbar">
         <h1 id="view-title">NPC Details</h1>
-        <div class="topbar-actions"><a class="btn" href="./index.html#npcs">Back</a></div>
+        <div class="topbar-actions"><a class="btn" href="./index.html?view=npcs">Back</a></div>
       </header>
 
       <section class="view active">

@@ -44,7 +44,13 @@
   els.navItems.forEach(i => i.addEventListener('click', e => {
     e.preventDefault();
     const v = i.getAttribute('data-view');
-    if(views.includes(v)) setActiveView(v);
+    if(views.includes(v)) {
+      // Update URL without reloading the page
+      const url = new URL(window.location);
+      url.searchParams.set('view', v);
+      window.history.pushState({}, '', url);
+      setActiveView(v);
+    }
   }));
 
   async function fetchHealth(){
@@ -148,8 +154,15 @@
     window.location.href = `./npc.html?id=${id}`;
   });
 
+  // Check URL for view parameter
+  function getInitialView() {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    return views.includes(view) ? view : 'home';
+  }
+  
   // initial
-  setActiveView('home');
+  setActiveView(getInitialView());
   fetchHealth();
   setInterval(fetchHealth, 5000);
   // Poll NPCs periodically when on NPCs view
