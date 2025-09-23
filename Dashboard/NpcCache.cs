@@ -14,6 +14,8 @@ namespace Dashboard
             public string name;
             public string surname;
             public string photoBase64;
+            public float hpCurrent;
+            public float hpMax;
         }
 
         private static readonly object _lock = new object();
@@ -68,7 +70,9 @@ namespace Dashboard
                             id = citizen.humanID,
                             name = citizen.GetCitizenName(),
                             surname = citizen.GetSurName(),
-                            photoBase64 = GetPhotoBase64(citizen)
+                            photoBase64 = GetPhotoBase64(citizen),
+                            hpCurrent = (citizen is Actor a1) ? a1.currentHealth : 0f,
+                            hpMax = (citizen is Actor a2) ? a2.maximumHealth : 0f
                         };
                         list.Add(info);
                     }
@@ -85,6 +89,22 @@ namespace Dashboard
             catch (Exception ex)
             {
                 ModLogger.Error($"Failed to build NPC cache: {ex}");
+            }
+        }
+
+        public static void UpdateHealth(int id, float current, float max)
+        {
+            lock (_lock)
+            {
+                for (int i = 0; i < _npcs.Count; i++)
+                {
+                    if (_npcs[i].id == id)
+                    {
+                        _npcs[i].hpCurrent = current;
+                        _npcs[i].hpMax = max;
+                        break;
+                    }
+                }
             }
         }
 

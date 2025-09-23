@@ -87,7 +87,9 @@ body{
 .npc-photo img{width:100%; height:100%; object-fit:contain; display:block}
 .npc-meta{display:flex; flex-direction:column; min-width:0}
 .npc-name{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.npc-surname{color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.npc-surname{display:none}
+.npc-hp{margin-top:6px; width:140px; height:8px; border-radius:6px; background:rgba(255,255,255,0.08); border:1px solid var(--border); overflow:hidden}
+.npc-hp-fill{height:100%; background:linear-gradient(90deg, #65d18f, #44b3ff); box-shadow:0 0 8px rgba(68,179,255,0.4) inset}
 
 @media (max-width: 900px){
   .layout{grid-template-columns:1fr}

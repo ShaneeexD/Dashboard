@@ -87,15 +87,23 @@
     const html = data.map(n => `
       <div class="npc-card" title="${escapeHtml(n.name || '')}">
         <div class="npc-photo">
-          <img class="npc-img" loading="lazy" src="${n.photo || 'placeholder.png'}" alt="${escapeHtml(n.name || '')}"/>
+          <img class="npc-img" loading="lazy" src="${n.photo || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottQAAAABJRU5ErkJggg=='}" alt="${escapeHtml(n.name || '')}"/>
         </div>
         <div class="npc-meta">
           <div class="npc-name">${escapeHtml(n.name || '')}</div>
-          <div class="npc-surname">${escapeHtml(n.surname || '')}</div>
+          <div class="npc-hp"><div class="npc-hp-fill" style="width:${hpPct(n)}%"></div></div>
         </div>
       </div>
     `).join('');
     els.npcList.innerHTML = html;
+  }
+
+  function hpPct(n){
+    const cur = Number(n.hpCurrent)||0;
+    const max = Number(n.hpMax)||0;
+    if(max <= 0) return 0;
+    const pct = Math.max(0, Math.min(100, (cur/max)*100));
+    return pct.toFixed(0);
   }
 
   function escapeHtml(s){
@@ -109,4 +117,9 @@
   setActiveView('home');
   fetchHealth();
   setInterval(fetchHealth, 5000);
+  // Poll NPCs periodically when on NPCs view
+  setInterval(() => {
+    const isOnNpcs = document.getElementById('view-npcs')?.classList.contains('active');
+    if(isOnNpcs) fetchNpcs();
+  }, 2000);
 })();
