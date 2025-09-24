@@ -219,6 +219,12 @@ namespace Dashboard
                 return;
             }
 
+            if (target.StartsWith("/api/npc/", StringComparison.OrdinalIgnoreCase))
+            {
+                HandleNpcAction(writer, method, target);
+                return;
+            }
+
             // List NPCs
             if (target.Equals("/api/npcs", StringComparison.OrdinalIgnoreCase))
             {
@@ -243,6 +249,149 @@ namespace Dashboard
 
 
             WriteSimpleResponse(writer, 404, "Not Found", "Unknown API endpoint");
+        }
+
+        private void HandleNpcAction(StreamWriter writer, string method, string target)
+        {
+            if (!string.Equals(method, "POST", StringComparison.OrdinalIgnoreCase))
+            {
+                WriteSimpleResponse(writer, 405, "Method Not Allowed", "Use POST for NPC actions");
+                return;
+            }
+
+            var path = target;
+            int qIdx = path.IndexOf('?');
+            if (qIdx >= 0) path = path.Substring(0, qIdx);
+            qIdx = path.IndexOf('#');
+            if (qIdx >= 0) path = path.Substring(0, qIdx);
+
+            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length < 4)
+            {
+                WriteSimpleResponse(writer, 400, "Bad Request", "NPC action requires /api/npc/{id}/{action}");
+                return;
+            }
+
+            if (!int.TryParse(segments[2], out int npcId))
+            {
+                WriteSimpleResponse(writer, 400, "Bad Request", "Invalid NPC id");
+                return;
+            }
+
+            string action = segments[3].ToLowerInvariant();
+            switch (action)
+            {
+                case "teleport-player":
+                    HandleTeleportPlayer(writer, npcId);
+                    break;
+                case "teleport-npc":
+                    HandleTeleportNpc(writer, npcId);
+                    break;
+                default:
+                    WriteSimpleResponse(writer, 404, "Not Found", "Unknown NPC action");
+                    break;
+            }
+        }
+
+        private void HandleTeleportPlayer(StreamWriter writer, int npcId)
+        {
+            (bool ok, string message) result;
+            try
+            {
+                result = Plugin.RunSync(() =>
+                {
+                    var player = Player.Instance;
+                    if (player == null)
+                        return (false, "Player not available");
+
+                    if (!NpcCache.TryGetCitizen(npcId, out var citizen) || citizen == null)
+                        return (false, "NPC not found");
+
+                    var targetTransform = citizen.transform;
+                    if (targetTransform == null)
+                        return (false, "NPC transform unavailable");
+
+                    // Compute a safe destination slightly behind the NPC to avoid overlapping colliders
+                    Vector3 forward = targetTransform.forward.sqrMagnitude > 0.001f ? targetTransform.forward.normalized : Vector3.forward;
+                    Vector3 destPos = targetTransform.position - forward * 0.9f + Vector3.up * 0.05f;
+
+                    // Temporarily disable player movement and CharacterController to allow warp while unpaused
+                    var fpc = player.fps; // UnityStandardAssets FirstPersonController
+                    var cc = player.charController; // CharacterController
+                    bool prevMove = fpc != null ? fpc.enableMovement : true;
+                    try
+                    {
+                        // Disable movement (prevents controller from immediately moving us)
+                        player.EnablePlayerMovement(false, true);
+                        if (cc != null) cc.enabled = false;
+
+                        // Move the controlling transform (prefer FPC transform if available)
+                        if (fpc != null) fpc.transform.position = destPos; else player.transform.position = destPos;
+                        // Face same direction as NPC (yaw only)
+                        var e = player.transform.eulerAngles; e.y = targetTransform.eulerAngles.y; player.transform.eulerAngles = e;
+
+                        if (cc != null) cc.enabled = true;
+                        // Update location so systems recalc nodes/rooms
+                        player.UpdateGameLocation(0f);
+                    }
+                    finally
+                    {
+                        // Restore previous movement state
+                        player.EnablePlayerMovement(prevMove, true);
+                    }
+
+                    return (true, $"Player teleported to {citizen.GetCitizenName()}");
+                }, 10000);
+            }
+            catch (Exception ex)
+            {
+                result = (false, $"Teleport failed: {ex.Message}");
+            }
+
+            string json = $"{{\"success\":{(result.ok ? "true" : "false")},\"message\":\"{JsonEscape(result.message)}\"}}";
+            WriteJson(writer, result.ok ? 200 : 500, json);
+        }
+
+        private void HandleTeleportNpc(StreamWriter writer, int npcId)
+        {
+            (bool ok, string message) result;
+            try
+            {
+                result = Plugin.RunSync(() =>
+                {
+                    var player = Player.Instance;
+                    if (player == null)
+                        return (false, "Player not available");
+
+                    if (!NpcCache.TryGetCitizen(npcId, out var citizen) || citizen == null)
+                        return (false, "NPC not found");
+
+                    var npcTransform = citizen.transform;
+                    var playerTransform = player.transform;
+                    if (npcTransform == null || playerTransform == null)
+                        return (false, "Transform unavailable");
+
+                    Vector3 offset = playerTransform.forward.normalized * 0.75f;
+                    if (!offset.sqrMagnitude.Equals(0f))
+                    {
+                        npcTransform.position = playerTransform.position + offset;
+                    }
+                    else
+                    {
+                        npcTransform.position = playerTransform.position + new Vector3(0.75f, 0f, 0f);
+                    }
+                    npcTransform.rotation = playerTransform.rotation;
+                    citizen.UpdateGameLocation(0f);
+                    return (true, $"NPC teleported to player");
+                }, 10000);
+            }
+            catch (Exception ex)
+            {
+                result = (false, $"Teleport failed: {ex.Message}");
+            }
+
+            string json = $"{{\"success\":{(result.ok ? "true" : "false")},\"message\":\"{JsonEscape(result.message)}\"}}";
+            WriteJson(writer, result.ok ? 200 : 500, json);
         }
 
         private void ServeStatic(StreamWriter writer, string method, string target)
@@ -310,7 +459,7 @@ namespace Dashboard
         {
             WriteStatusLine(writer, 204, "No Content");
             writer.WriteLine("Access-Control-Allow-Origin: *");
-            writer.WriteLine("Access-Control-Allow-Methods: GET, HEAD, OPTIONS");
+            writer.WriteLine("Access-Control-Allow-Methods: GET, HEAD, OPTIONS, POST");
             writer.WriteLine("Access-Control-Allow-Headers: Content-Type");
             writer.WriteLine("Access-Control-Max-Age: 600");
             writer.WriteLine("Connection: close");

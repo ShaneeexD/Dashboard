@@ -123,6 +123,12 @@ body{
 .detail-row{display:flex; margin:8px 0}
 .detail-label{width:100px; color:var(--muted); font-size:14px}
 .detail-value{flex:1; font-size:14px}
+.dev-actions{display:flex; flex-wrap:wrap; gap:8px}
+.dev-actions .btn{flex:0 0 auto}
+.dev-status{margin-top:10px; font-size:13px; color:var(--muted)}
+.dev-status-info{color:var(--muted)}
+.dev-status-ok{color:#11d67a}
+.dev-status-error{color:#e05555}
 
 @media (max-width: 900px){
   .layout{grid-template-columns:1fr}

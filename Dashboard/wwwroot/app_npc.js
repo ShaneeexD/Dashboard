@@ -12,7 +12,10 @@
     employer: document.getElementById('npc-employer'),
     job: document.getElementById('npc-job'),
     salary: document.getElementById('npc-salary'),
-    address: document.getElementById('npc-address')
+    address: document.getElementById('npc-address'),
+    devTeleportPlayer: document.getElementById('dev-teleport-player'),
+    devTeleportNpc: document.getElementById('dev-teleport-npc'),
+    devStatus: document.getElementById('dev-action-status')
   };
 
   const params = new URLSearchParams(location.search);
@@ -35,6 +38,40 @@
     }catch{
       els.dot.style.background = '#e05555';
       els.text.textContent = 'Offline';
+    }
+  }
+
+  function setDevStatus(message, tone = 'info'){
+    if(!els.devStatus) return;
+    els.devStatus.textContent = message;
+    els.devStatus.classList.remove('dev-status-info','dev-status-ok','dev-status-error');
+    const cls = tone === 'ok' ? 'dev-status-ok' : tone === 'error' ? 'dev-status-error' : 'dev-status-info';
+    els.devStatus.classList.add(cls);
+  }
+
+  function setDevButtonsDisabled(disabled){
+    if(els.devTeleportPlayer) els.devTeleportPlayer.disabled = disabled;
+    if(els.devTeleportNpc) els.devTeleportNpc.disabled = disabled;
+  }
+
+  async function runNpcAction(action){
+    if(!Number.isFinite(npcId)) return;
+    if(!action) return;
+    setDevStatus('Running action…','info');
+    setDevButtonsDisabled(true);
+    try{
+      const res = await fetch(`/api/npc/${npcId}/${action}`, { method:'POST', cache:'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || data.success === false){
+        const message = data.message || `Action failed (${res.status})`;
+        setDevStatus(message, 'error');
+      }else{
+        setDevStatus(data.message || 'Action completed.', 'ok');
+      }
+    }catch(err){
+      setDevStatus(`Action failed: ${err?.message || err}`, 'error');
+    }finally{
+      setDevButtonsDisabled(false);
     }
   }
 
@@ -77,6 +114,13 @@
       // Home address
       if (els.address) els.address.textContent = n.homeAddress || '—';
     }catch{}
+  }
+
+  if(els.devTeleportPlayer){
+    els.devTeleportPlayer.addEventListener('click', () => runNpcAction('teleport-player'));
+  }
+  if(els.devTeleportNpc){
+    els.devTeleportNpc.addEventListener('click', () => runNpcAction('teleport-npc'));
   }
 
   // initial + polling

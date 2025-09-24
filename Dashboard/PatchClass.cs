@@ -118,5 +118,14 @@ namespace Dashboard
             if (error != null) throw error;
             return result;
         }
+
+        // Allow Harmony patches (e.g., Player.Update postfix) to explicitly drain queued actions each frame
+        public static void Drain()
+        {
+            while (_mtQueue.TryDequeue(out var act))
+            {
+                try { act?.Invoke(); } catch { }
+            }
+        }
     }
 }

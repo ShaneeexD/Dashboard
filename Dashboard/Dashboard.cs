@@ -21,6 +21,9 @@ namespace Dashboard
         {
             try
             {
+                // Drain any enqueued main-thread actions so Plugin.RunSync() completes
+                Plugin.Drain();
+
                 if (SessionData.Instance != null)
                 {
                     string timeText = SessionData.Instance.TimeAndDate(SessionData.Instance.gameTime, true, true, true);
