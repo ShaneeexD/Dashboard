@@ -130,7 +130,8 @@
         <div class="npc-meta">
           <div class="npc-name">${escapeHtml(n.name || '')}</div>
           <div class="npc-hptext ${hpClass(n)}">${hpText(n)}</div>
-          <div class="npc-hp"><div class="npc-hp-fill" style="width:${hpPct(n)}%"></div></div>
+          <div class="npc-hp"><div class="npc-hp-fill" style="width:${hpPct(n)}%"></div><div class="npc-hp-label">${n.isDead ? 'DEAD' : ''}</div></div>
+          ${koMiniHtml(n)}
         </div>
       </div>
     `).join('');
@@ -144,6 +145,7 @@
   }
 
   function hpPct(n){
+    if (n.isDead) return 0;
     const cur = Number(n.hpCurrent)||0;
     const max = Number(n.hpMax)||0;
     if(max <= 0) return 0;
@@ -152,6 +154,7 @@
   }
   
   function hpText(n){
+    if (n.isDead) return 'Dead';
     const cur = Number(n.hpCurrent)||0;
     const max = Number(n.hpMax)||0;
     // Scale by 100 to show 0-100 range
@@ -159,8 +162,18 @@
   }
   
   function hpClass(n){
+    if (n.isDead) return 'hp-dead';
     const p = Number(hpPct(n));
     return p >= 66 ? 'hp-high' : p >= 33 ? 'hp-med' : 'hp-low';
+  }
+
+  function koMiniHtml(n){
+    if (!n.isKo) return '';
+    const total = Number(n.koTotalSeconds)||0;
+    const remain = Number(n.koRemainingSeconds)||0;
+    if (total <= 0) return '';
+    const pct = Math.max(0, Math.min(100, (remain/total)*100)).toFixed(0);
+    return `<div class="npc-ko-mini"><div class="npc-ko-fill-mini" style="width:${pct}%"></div></div>`;
   }
 
   function escapeHtml(s){

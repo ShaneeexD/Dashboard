@@ -97,8 +97,20 @@ body{
 .hp-high{color:#65d18f}
 .hp-med{color:#e0c15a}
 .hp-low{color:#e05555}
-.npc-hp{margin-top:6px; width:140px; height:8px; border-radius:6px; background:rgba(255,255,255,0.08); border:1px solid var(--border); overflow:hidden}
+.npc-hp{position:relative; margin-top:6px; width:140px; height:8px; border-radius:6px; background:rgba(255,255,255,0.08); border:1px solid var(--border); overflow:hidden}
 .npc-hp-fill{height:100%; background:linear-gradient(90deg, #65d18f, #44b3ff); box-shadow:0 0 8px rgba(68,179,255,0.4) inset}
+.npc-hp-label{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#e05555; letter-spacing:0.5px; text-shadow:0 1px 2px rgba(0,0,0,0.6); pointer-events:none}
+.hp-dead{color:#e05555}
+
+/* KO bar (details page) */
+.npc-ko{position:relative; margin-top:8px; width:240px; height:8px; border-radius:6px; background:rgba(255,255,255,0.08); border:1px solid var(--border); overflow:hidden}
+.npc-ko-fill{height:100%; background:linear-gradient(90deg, #ffb347, #ffcc33); box-shadow:0 0 8px rgba(255,180,70,0.35) inset}
+.npc-ko-label{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#ffb347; letter-spacing:0.4px; text-shadow:0 1px 2px rgba(0,0,0,0.5); pointer-events:none}
+
+/* KO bar (list mini) */
+.npc-ko-mini{position:relative; margin-top:6px; width:140px; height:6px; border-radius:6px; background:rgba(255,255,255,0.08); border:1px solid var(--border); overflow:hidden}
+.npc-ko-fill-mini{height:100%; background:linear-gradient(90deg, #ffb347, #ffcc33)}
+.npc-ko-label-mini{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#ffb347; letter-spacing:0.3px; text-shadow:0 1px 1px rgba(0,0,0,0.5); pointer-events:none}
 
 /* Details panel */
 .npc-details{position:sticky; top:20px; align-self:start; border:1px solid var(--border); border-radius:12px; padding:14px; background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%), var(--card); box-shadow:var(--shadow)}

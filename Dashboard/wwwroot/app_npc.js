@@ -8,6 +8,10 @@
     name: document.getElementById('npc-det-name'),
     hpText: document.getElementById('npc-det-hptext'),
     hpFill: document.getElementById('npc-det-hpfill'),
+    hpBar: document.getElementById('npc-det-hpbar'),
+    hpLabel: document.getElementById('npc-det-hplabel'),
+    koBar: document.getElementById('npc-ko-bar'),
+    koFill: document.getElementById('npc-ko-fill'),
     title: document.getElementById('view-title'),
     employer: document.getElementById('npc-employer'),
     job: document.getElementById('npc-job'),
@@ -92,18 +96,41 @@
       els.photo.src = n.photo || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottQAAAABJRU5ErkJggg==';
       els.name.textContent = n.name || '—';
       
-      // HP bar and text with color coding
+      // HP bar and text with death handling
+      const isDead = !!n.isDead;
       const cur = Number(n.hpCurrent)||0;
       const max = Number(n.hpMax)||0;
       const pct = Number(hpPct(n));
-      els.hpFill.style.width = pct + '%';
       
-      // HP text with color level
-      if (els.hpText) {
-        // Scale by 100 to show 0-100 range
-        els.hpText.textContent = `${Math.round(cur * 100)}/${Math.round(max * 100)} HP`;
-        els.hpText.classList.remove('hp-high','hp-med','hp-low');
-        els.hpText.classList.add(pct >= 66 ? 'hp-high' : pct >= 33 ? 'hp-med' : 'hp-low');
+      if (isDead) {
+        if (els.hpFill) els.hpFill.style.width = '0%';
+        if (els.hpLabel) els.hpLabel.textContent = 'DEAD';
+        if (els.hpText) {
+          els.hpText.textContent = 'Dead';
+          els.hpText.classList.remove('hp-high','hp-med','hp-low');
+          els.hpText.classList.add('hp-dead');
+        }
+      } else {
+        if (els.hpFill) els.hpFill.style.width = pct + '%';
+        if (els.hpLabel) els.hpLabel.textContent = '';
+        if (els.hpText) {
+          els.hpText.textContent = `${Math.round(cur * 100)}/${Math.round(max * 100)} HP`;
+          els.hpText.classList.remove('hp-high','hp-med','hp-low','hp-dead');
+          els.hpText.classList.add(pct >= 66 ? 'hp-high' : pct >= 33 ? 'hp-med' : 'hp-low');
+        }
+      }
+
+      // KO Bar
+      const isKo = !!n.isKo;
+      const koTotal = Number(n.koTotalSeconds) || 0;
+      const koRemain = Number(n.koRemainingSeconds) || 0;
+      if (isKo && koTotal > 0 && koRemain >= 0) {
+        const kpct = Math.max(0, Math.min(100, (koRemain / koTotal) * 100));
+        els.koFill && (els.koFill.style.width = kpct.toFixed(0) + '%');
+        els.koBar && els.koBar.classList.remove('hidden');
+      } else {
+        if (els.koFill) els.koFill.style.width = '0%';
+        els.koBar && els.koBar.classList.add('hidden');
       }
       
       // Job information

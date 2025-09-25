@@ -16,6 +16,10 @@ namespace Dashboard
             public string photoBase64;
             public float hpCurrent;
             public float hpMax;
+            public bool isDead;
+            public bool isKo;
+            public float koRemainingSeconds;
+            public float koTotalSeconds;
             public string employer;
             public string jobTitle;
             public string salary;
@@ -77,6 +81,10 @@ namespace Dashboard
                             photoBase64 = GetPhotoBase64(citizen),
                             hpCurrent = (citizen is Actor a1) ? a1.currentHealth : 0f,
                             hpMax = (citizen is Actor a2) ? a2.maximumHealth : 0f,
+                            isDead = (citizen is Actor a3) ? a3.isDead : false,
+                            isKo = false,
+                            koRemainingSeconds = 0f,
+                            koTotalSeconds = 0f,
                             employer = citizen.job?.employer?.name?.ToString() ?? "",
                             jobTitle = citizen.job?.name?.ToString() ?? "",
                             salary = citizen.job?.salaryString?.ToString() ?? "",
@@ -110,6 +118,60 @@ namespace Dashboard
                     {
                         _npcs[i].hpCurrent = current;
                         _npcs[i].hpMax = max;
+                        // Do not infer death from health; KO can be 0 HP without being dead.
+                        break;
+                    }
+                }
+            }
+        }
+
+        public static void UpdateDeath(int id, bool dead)
+        {
+            lock (_lock)
+            {
+                for (int i = 0; i < _npcs.Count; i++)
+                {
+                    if (_npcs[i].id == id)
+                    {
+                        _npcs[i].isDead = dead;
+                        if (dead)
+                        {
+                            _npcs[i].isKo = false;
+                            _npcs[i].koRemainingSeconds = 0f;
+                            _npcs[i].koTotalSeconds = 0f;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        public static void UpdateKo(int id, bool isKo, float totalSeconds, float remainingSeconds)
+        {
+            lock (_lock)
+            {
+                for (int i = 0; i < _npcs.Count; i++)
+                {
+                    if (_npcs[i].id == id)
+                    {
+                        _npcs[i].isKo = isKo;
+                        _npcs[i].koTotalSeconds = Math.Max(0f, totalSeconds);
+                        _npcs[i].koRemainingSeconds = Math.Max(0f, remainingSeconds);
+                        break;
+                    }
+                }
+            }
+        }
+
+        public static void UpdateKoTick(int id, float remainingSeconds)
+        {
+            lock (_lock)
+            {
+                for (int i = 0; i < _npcs.Count; i++)
+                {
+                    if (_npcs[i].id == id)
+                    {
+                        _npcs[i].koRemainingSeconds = Math.Max(0f, remainingSeconds);
                         break;
                     }
                 }
