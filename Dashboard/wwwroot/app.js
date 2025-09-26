@@ -58,6 +58,28 @@
   let selectedNpcId = null;
   let playerStatusTimer = null;
 
+  // Noir background: update CSS vars based on mouse position (0..1)
+  (function(){
+    let rafPending = false;
+    let mx = 0.5, my = 0.5;
+    function applyVars(){
+      document.documentElement.style.setProperty('--mouse-x', mx.toFixed(3));
+      document.documentElement.style.setProperty('--mouse-y', my.toFixed(3));
+    }
+    window.addEventListener('mousemove', (e) => {
+      const w = window.innerWidth || 1;
+      const h = window.innerHeight || 1;
+      mx = Math.max(0, Math.min(1, e.clientX / w));
+      my = Math.max(0, Math.min(1, e.clientY / h));
+      if (!rafPending) {
+        rafPending = true;
+        requestAnimationFrame(() => { rafPending = false; applyVars(); });
+      }
+    });
+    window.addEventListener('mouseleave', () => { mx = 0.5; my = 0.5; applyVars(); });
+    applyVars();
+  })();
+
   function setActiveView(name){
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-' + name).classList.add('active');

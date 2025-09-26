@@ -8,6 +8,8 @@
   --accent-2:#7af3c5;
   --border:rgba(255,255,255,0.08);
   --shadow:0 10px 30px rgba(0,0,0,0.35);
+  --mouse-x:0.5;
+  --mouse-y:0.5;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -28,9 +30,16 @@ body{
 }
 .brand{display:flex; align-items:center; gap:12px; padding:4px 8px}
 .logo{
-  width:36px; height:36px; display:grid; place-items:center; font-weight:800;
-  border-radius:10px; background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#08121a; box-shadow:var(--shadow)
+  width:36px; height:36px; display:grid; place-items:center;
+  border-radius:10px; background:linear-gradient(135deg, rgba(109,197,255,0.25), rgba(122,243,197,0.18));
+  color:#08121a; box-shadow:var(--shadow); border:1px solid var(--border);
 }
+.logo-svg{width:28px; height:28px; display:block}
+.logo-svg .neon{stroke:url(#logo-grad); filter:url(#logo-glow)}
+.logo-svg .ring{fill:none; stroke-width:2; stroke-linecap:round; stroke-dasharray:4 6; animation:dash 8s linear infinite}
+.logo-svg .s-stroke{fill:none; stroke-width:2; stroke-linecap:round}
+.logo-svg .d-stroke{fill:none; stroke-width:2; stroke-linecap:round}
+@keyframes dash{to{stroke-dashoffset:-80}}
 .title{font-weight:700; letter-spacing:0.4px}
 .nav{display:flex; flex-direction:column; gap:6px; margin-top:8px}
 .nav-item{
@@ -43,6 +52,23 @@ body{
 .status{display:flex; align-items:center; gap:8px; padding:10px 12px; border-top:1px solid var(--border); margin-top:8px}
 .dot{width:10px; height:10px; border-radius:50%; background:#888; box-shadow:0 0 10px rgba(0,0,0,0.4)}
 .status-text{font-size:12px; color:var(--muted)}
+
+/* Noir animated background */
+.noir-background{position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; background:var(--bg)}
+.noir-background .gradient-layer{position:absolute; inset:0; background:linear-gradient(45deg, var(--bg) 0%, var(--bg-elev) 25%, #121723 50%, var(--bg-elev) 75%, var(--bg) 100%); background-size:400% 400%; animation:nb-gradient 16s ease-in-out infinite}
+@keyframes nb-gradient{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.noir-background .film-grain{position:absolute; inset:0; opacity:0.12; background-image:radial-gradient(circle at 20% 80%, transparent 50%, rgba(255,255,255,0.10) 50.1%), radial-gradient(circle at 80% 20%, transparent 50%, rgba(255,255,255,0.08) 50.1%), radial-gradient(circle at 40% 40%, transparent 50%, rgba(255,255,255,0.05) 50.1%); background-size:3px 3px,4px 4px,2px 2px; animation:nb-grain .55s steps(10) infinite}
+@keyframes nb-grain{0%{transform:translate(0,0)}20%{transform:translate(1px,-1px)}40%{transform:translate(-1px,1px)}60%{transform:translate(0,1px)}80%{transform:translate(-1px,0)}100%{transform:translate(0,0)}}
+.noir-background .vignette{position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.7) 100%)}
+.noir-background .parallax-layer{position:absolute; inset:0}
+.noir-background .grid-layer{position:absolute; inset:0; opacity:0.14; background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 24px 24px, 24px 24px; transform: translateX(calc((var(--mouse-x) - 0.5)*8px)) translateY(calc((var(--mouse-y) - 0.5)*8px)); transition: transform .4s ease-out}
+.noir-background .grid-layer::after{content:""; position:absolute; inset:0; background-image: linear-gradient(rgba(109,197,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(122,243,197,0.04) 1px, transparent 1px); background-size: 96px 96px, 96px 96px; mix-blend-mode:screen; opacity:0.25}
+.noir-background .scan-sweep{position:absolute; inset:-20% 0 auto 0; height:40%; background:linear-gradient(180deg, transparent, rgba(109,197,255,0.05), transparent); transform: translateY(calc((var(--mouse-y) - 0.5)*-20px)); animation:nb-scan 14s linear infinite; opacity:.35}
+@keyframes nb-scan{0%{top:-40%}100%{top:140%}}
+.noir-background .glow-orb-1,.noir-background .glow-orb-2{position:absolute; border-radius:50%; will-change:transform; transition:transform .6s ease-out}
+.noir-background .glow-orb-1{width:280px; height:280px; top:12%; right:20%; background:radial-gradient(circle, color-mix(in oklab, var(--accent) 12%, transparent) 0%, transparent 70%); transform:translateX(calc(var(--mouse-x)*-60px + 30px)) translateY(calc(var(--mouse-y)*-40px + 20px)); animation:nb-float 16s ease-in-out infinite}
+.noir-background .glow-orb-2{width:200px; height:200px; bottom:22%; left:25%; background:radial-gradient(circle, color-mix(in oklab, var(--accent-2) 10%, transparent) 0%, transparent 70%); transform:translateX(calc(var(--mouse-x)*50px - 25px)) translateY(calc(var(--mouse-y)*35px - 18px)); animation:nb-float 18s ease-in-out infinite reverse}
+@keyframes nb-float{0%,100%{transform:translateX(0) translateY(0)}33%{transform:translateX(6px) translateY(-4px)}66%{transform:translateX(-4px) translateY(6px)}}
 
 .content{position:relative}
 .topbar{display:flex; align-items:center; justify-content:space-between; padding:20px 28px; border-bottom:1px solid var(--border); -webkit-backdrop-filter:saturate(120%) blur(8px); backdrop-filter:saturate(120%) blur(8px)}
