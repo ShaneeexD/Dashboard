@@ -27,12 +27,36 @@
     playerSearch: document.getElementById('player-search'),
     playerPreset: document.getElementById('player-preset'),
     playerSpawn: document.getElementById('player-spawn'),
-    playerStatus: document.getElementById('player-status')
+    playerStatus: document.getElementById('player-status'),
+    // Player bars
+    pHealthFill: document.getElementById('player-health-fill'),
+    pHealthText: document.getElementById('player-health-text'),
+    pHunFill: document.getElementById('player-hunger-fill'),
+    pHunText: document.getElementById('player-hunger-text'),
+    pThFill: document.getElementById('player-thirst-fill'),
+    pThText: document.getElementById('player-thirst-text'),
+    pTiFill: document.getElementById('player-tiredness-fill'),
+    pTiText: document.getElementById('player-tiredness-text'),
+    pEnFill: document.getElementById('player-energy-fill'),
+    pEnText: document.getElementById('player-energy-text'),
+    pSkFill: document.getElementById('player-stinky-fill'),
+    pSkText: document.getElementById('player-stinky-text'),
+    pCoFill: document.getElementById('player-cold-fill'),
+    pCoText: document.getElementById('player-cold-text'),
+    pWeFill: document.getElementById('player-wet-fill'),
+    pWeText: document.getElementById('player-wet-text'),
+    pHeFill: document.getElementById('player-headache-fill'),
+    pHeText: document.getElementById('player-headache-text'),
+    pBrFill: document.getElementById('player-bruised-fill'),
+    pBrText: document.getElementById('player-bruised-text'),
+    pBlFill: document.getElementById('player-bleeding-fill'),
+    pBlText: document.getElementById('player-bleeding-text')
   };
   let playerPresetsLoaded = false;
   let playerPresetMaster = [];
   let npcCache = [];
   let selectedNpcId = null;
+  let playerStatusTimer = null;
 
   function setActiveView(name){
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -53,6 +77,7 @@
     }
     if(name === 'player'){
       if(!playerPresetsLoaded) fetchPlayerPresets();
+      startPlayerStatusPolling();
     }
   }
 
@@ -146,6 +171,61 @@
   }
 
   // spawnDefaultInventory removed (unsafe)
+
+  function startPlayerStatusPolling(){
+    stopPlayerStatusPolling();
+    fetchPlayerStatus();
+    playerStatusTimer = setInterval(() => {
+      const active = document.getElementById('view-player')?.classList.contains('active');
+      if(active) fetchPlayerStatus(); else stopPlayerStatusPolling();
+    }, 1000);
+  }
+
+  function stopPlayerStatusPolling(){
+    if(playerStatusTimer){ clearInterval(playerStatusTimer); playerStatusTimer = null; }
+  }
+
+  async function fetchPlayerStatus(){
+    try{
+      const res = await fetch('/api/player/status', { cache:'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if(!data || data.ok === false) throw new Error(data?.message || 'Unavailable');
+      renderPlayerStatus(data);
+    }catch(err){
+      // Do not spam status line; silently ignore transient errors
+    }
+  }
+
+  function pct100(x){ return Math.max(0, Math.min(100, Math.round((x||0)*100))); }
+  function setBar(fillEl, textEl, value, label){
+    const p = pct100(value);
+    if(fillEl) fillEl.style.width = p + '%';
+    if(textEl) textEl.textContent = (p === 0 ? '' : label);
+    const row = fillEl ? fillEl.closest('.form-row') : null;
+    if(row) row.classList.toggle('is-zero', p === 0);
+  }
+
+  function renderPlayerStatus(d){
+    const hCur = Number(d?.health?.current)||0;
+    const hMax = Number(d?.health?.max)||0;
+    const hpPct = hMax > 0 ? Math.max(0, Math.min(100, Math.round((hCur/hMax)*100))) : 0;
+    setBar(els.pHealthFill, els.pHealthText, hpPct/100, `${Math.round(hCur*100)}/${Math.round(hMax*100)} HP (${hpPct}%)`);
+
+    const needs = d?.needs||{};
+    setBar(els.pHunFill, els.pHunText, needs.hunger||0, `${pct100(needs.hunger||0)}%`);
+    setBar(els.pThFill, els.pThText, needs.thirst||0, `${pct100(needs.thirst||0)}%`);
+    setBar(els.pTiFill, els.pTiText, needs.tiredness||0, `${pct100(needs.tiredness||0)}%`);
+    setBar(els.pEnFill, els.pEnText, needs.energy||0, `${pct100(needs.energy||0)}%`);
+
+    const st = d?.status||{};
+    setBar(els.pSkFill, els.pSkText, st.stinky||0, `${pct100(st.stinky||0)}%`);
+    setBar(els.pCoFill, els.pCoText, st.cold||0, `${pct100(st.cold||0)}%`);
+    setBar(els.pWeFill, els.pWeText, st.wet||0, `${pct100(st.wet||0)}%`);
+    setBar(els.pHeFill, els.pHeText, st.headache||0, `${pct100(st.headache||0)}%`);
+    setBar(els.pBrFill, els.pBrText, st.bruised||0, `${pct100(st.bruised||0)}%`);
+    setBar(els.pBlFill, els.pBlText, st.bleeding||0, `${pct100(st.bleeding||0)}%`);
+  }
 
   async function fetchHealth(){
     try{

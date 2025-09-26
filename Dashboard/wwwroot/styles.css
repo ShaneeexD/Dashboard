@@ -154,8 +154,17 @@ select.input option{background:var(--bg-elev); color:var(--text)}
 
 /* Utilities */
 .form-row{display:flex; align-items:center; gap:8px}
+.form-row.is-zero{display:none}
 .row-actions{margin-top:8px; display:flex; gap:8px}
 .mt-10{margin-top:10px}
+.mt-20{margin-top:20px}
+
+/* Bars */
+.bar{position:relative; width:240px; height:8px; border-radius:6px; background:rgba(255,255,255,0.08); border:1px solid var(--border); overflow:hidden}
+.bar-fill{height:100%; width:0%; transition:width .2s ease}
+.bar-health .bar-fill{background:linear-gradient(90deg, #65d18f, #44b3ff)}
+.bar-need .bar-fill{background:linear-gradient(90deg, #ffb347, #ffcc33)}
+.bar-status .bar-fill{background:linear-gradient(90deg, #e05555, #ff8a80)}
 
 @media (max-width: 900px){
   .layout{grid-template-columns:1fr}

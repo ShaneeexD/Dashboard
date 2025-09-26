@@ -259,6 +259,75 @@ namespace Dashboard
 
         private void HandlePlayerAction(StreamWriter writer, string method, string target)
         {
+            // GET /api/player/status -> player health and status metrics
+            if (target.StartsWith("/api/player/status", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+                {
+                    WriteSimpleResponse(writer, 405, "Method Not Allowed", "Use GET for this endpoint");
+                    return;
+                }
+                try
+                {
+                    var data = Plugin.RunSync(() =>
+                    {
+                        var p = Player.Instance;
+                        if (p == null) return (ok:false, json:"{\"ok\":false,\"message\":\"Player not available\"}");
+                        // Health
+                        float hCur = p.currentHealth;
+                        float hMax = p.GetCurrentMaxHealth();
+                        if (hMax <= 0f) hMax = Mathf.Max(1f, p.maximumHealth);
+                        // Core needs (0..1)
+                        var hu = Mathf.Clamp01(1f - p.nourishment); // hunger
+                        var th = Mathf.Clamp01(1f - p.hydration);   // thirst
+                        // Tired status in StatusController scales from energy 0..0.2
+                        // amount = 1 - energy/0.2 when energy <= 0.2, else status removed
+                        var ti = Mathf.Clamp01((0.2f - p.energy) / 0.2f); // 0 at >=0.2 energy, 1 at 0 energy
+                        var en = Mathf.Clamp01(p.energy);           // energy
+                        // Extra statuses (0..1)
+                        var stinky = Mathf.Clamp01(1f - p.hygiene);
+                        var cold = Mathf.Clamp01(1f - p.heat);
+                        var wet = Mathf.Clamp01(p.wet);
+                        var headache = Mathf.Clamp01(p.headache);
+                        var bruised = Mathf.Clamp01(p.bruised);
+                        var bleeding = Mathf.Clamp01(p.bleeding);
+
+                        var sb = new StringBuilder();
+                        sb.Append('{');
+                        sb.Append("\"ok\":true,");
+                        sb.Append("\"health\":{")
+                          .Append("\"current\":").Append(hCur.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',')
+                          .Append("\"max\":").Append(hMax.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append('}').Append(',');
+                        sb.Append("\"needs\":{")
+                          .Append("\"hunger\":").Append(hu.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',')
+                          .Append("\"thirst\":").Append(th.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',')
+                          .Append("\"tiredness\":").Append(ti.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',')
+                          .Append("\"energy\":").Append(en.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append('}').Append(',');
+                        sb.Append("\"status\":{")
+                          .Append("\"stinky\":").Append(stinky.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',')
+                          .Append("\"cold\":").Append(cold.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',')
+                          .Append("\"wet\":").Append(wet.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',')
+                          .Append("\"headache\":").Append(headache.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',')
+                          .Append("\"bruised\":").Append(bruised.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',')
+                          .Append("\"bleeding\":").Append(bleeding.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append('}');
+                        sb.Append('}');
+                        return (ok:true, json:sb.ToString());
+                    }, 5000);
+                    if (!data.ok)
+                    {
+                        WriteSimpleResponse(writer, 500, "Internal Server Error", "Player unavailable");
+                    }
+                    else
+                    {
+                        WriteJson(writer, 200, data.json);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteSimpleResponse(writer, 500, "Internal Server Error", ex.Message);
+                }
+                return;
+            }
             // GET /api/player/presets -> list inventory-capable interactable presets
             if (target.StartsWith("/api/player/presets", StringComparison.OrdinalIgnoreCase))
             {
