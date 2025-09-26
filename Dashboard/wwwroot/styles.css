@@ -133,7 +133,12 @@ select.input option{background:var(--bg-elev); color:var(--text)}
 /* NPC list */
 .npc-layout{display:grid; grid-template-columns:1fr 320px; gap:16px}
 .npc-list{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:12px}
-.npc-card{display:flex; gap:12px; align-items:center; padding:12px; border:1px solid var(--border); border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%), var(--card); box-shadow:var(--shadow)}
+.npc-card{display:flex; gap:12px; align-items:center; padding:12px; border:1px solid var(--border); border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%), var(--card); box-shadow:var(--shadow);
+  transition: transform .16s ease, box-shadow .2s ease, border-color .2s ease; will-change: transform}
+.npc-card:hover{transform:translateY(-2px) scale(1.02); box-shadow:0 14px 32px rgba(0,0,0,0.45)}
+.npc-card:active{transform:scale(0.98)}
+.npc-card.clicked{animation:card-press .18s ease}
+@keyframes card-press{0%{transform:scale(1)}50%{transform:scale(0.97)}100%{transform:scale(1)}}
 .npc-card.clickable{cursor:pointer}
 .npc-card.selected{outline:2px solid var(--accent)}
 .npc-photo{width:56px; height:56px; border-radius:10px; overflow:hidden; background:rgba(30,30,40,0.8); display:grid; place-items:center; border:1px solid var(--border)}

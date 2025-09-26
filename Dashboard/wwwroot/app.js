@@ -57,6 +57,7 @@
   let npcCache = [];
   let selectedNpcId = null;
   let playerStatusTimer = null;
+  let lastNpcJson = '';
 
   // Noir background: update CSS vars based on mouse position (0..1)
   (function(){
@@ -295,7 +296,12 @@
     try{
       const res = await fetch('/api/npcs', { cache: 'no-store' });
       if(!res.ok) throw new Error('HTTP ' + res.status);
-      npcCache = await res.json();
+      const arr = await res.json();
+      // Avoid unnecessary DOM re-renders if data hasn't changed
+      const snapshot = JSON.stringify(arr);
+      if (snapshot === lastNpcJson) return;
+      lastNpcJson = snapshot;
+      npcCache = arr;
       renderNpcs();
     }catch(err){
       if(els.npcList){
@@ -385,6 +391,11 @@
     if(!card) return;
     const id = Number(card.dataset.id);
     if(!Number.isFinite(id)) return;
+    // optional small pulse before navigation
+    try{
+      card.classList.add('clicked');
+      setTimeout(() => card.classList.remove('clicked'), 220);
+    }catch{}
     // Navigate to dedicated NPC page
     window.location.href = `./npc.html?id=${id}`;
   });
