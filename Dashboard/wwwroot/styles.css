@@ -10,6 +10,9 @@
   --shadow:0 10px 30px rgba(0,0,0,0.35);
   --mouse-x:0.5;
   --mouse-y:0.5;
+  --neon-blue:#0077b6;
+  --neon-blue-2:#0099cc;
+  --sidebar-width:280px;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -27,6 +30,16 @@ body{
   background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%), var(--bg-elev);
   padding:24px 16px;
   display:flex; flex-direction:column; gap:16px;
+  position:relative;
+  /* ensure neon line sits on top of header bar */
+  border-right-color:transparent;
+  z-index:3;
+}
+.sidebar::after{
+  content:""; position:absolute; top:0; right:-1px; width:3px; height:100%; pointer-events:none; z-index:1;
+  background:linear-gradient(180deg, transparent 0%, var(--neon-blue) 15%, var(--neon-blue-2) 50%, var(--neon-blue) 85%, transparent 100%);
+  box-shadow:0 0 14px var(--neon-blue), 0 0 28px rgba(7, 79, 233, 0.55), inset 0 0 1px rgba(255,255,255,0.2);
+  opacity:.95; animation:neonPulse 3.2s ease-in-out infinite;
 }
 .brand{display:flex; align-items:center; gap:12px; padding:4px 8px}
 .logo{
@@ -83,7 +96,19 @@ body{
 @keyframes nb-float{0%,100%{transform:translateX(0) translateY(0)}33%{transform:translateX(6px) translateY(-4px)}66%{transform:translateX(-4px) translateY(6px)}}
 
 .content{position:relative}
-.topbar{display:flex; align-items:center; justify-content:space-between; padding:20px 28px; border-bottom:1px solid var(--border); -webkit-backdrop-filter:saturate(120%) blur(8px); backdrop-filter:saturate(120%) blur(8px)}
+.topbar{display:flex; align-items:center; justify-content:space-between; padding:20px 28px; border-bottom:1px solid var(--border); -webkit-backdrop-filter:saturate(120%) blur(8px); backdrop-filter:saturate(120%) blur(8px); position:relative; border-bottom-color:transparent; z-index:1}
+.topbar::after{
+  content:""; position:absolute; left:calc(-1 * var(--sidebar-width)); right:0; bottom:-1px; height:3px; pointer-events:none; z-index:0;
+  background:linear-gradient(90deg, transparent 0%, var(--neon-blue) 12%, var(--neon-blue-2) 50%, var(--neon-blue) 88%, transparent 100%);
+  box-shadow:0 0 12px var(--neon-blue), 0 0 24px rgba(7, 79, 233, 0.55);
+  opacity:.95; animation:neonPulse 3s ease-in-out infinite;
+}
+
+@keyframes neonPulse{0%,100%{opacity:.75}50%{opacity:1}}
+
+@media (prefers-reduced-motion: reduce){
+  .sidebar::after, .topbar::after{animation:none}
+}
 .topbar h1{margin:0; font-size:18px}
 .btn{
   background:linear-gradient(135deg, rgba(109,197,255,0.2), rgba(122,243,197,0.18));
