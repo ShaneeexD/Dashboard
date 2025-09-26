@@ -62,14 +62,29 @@
   let lastNpcJson = '';
 
   // Theme handling
-  const THEME_KEY = 'sod_theme'; // 'blue' | 'red'
+  const THEME_KEY = 'sod_theme'; // 'blue' | 'red' | 'green' | 'yellow' | 'purple' | 'cyan' | 'pink'
+  const THEME_MAP = {
+    blue: '',
+    red: 'theme-red',
+    green: 'theme-green',
+    yellow: 'theme-yellow',
+    purple: 'theme-purple',
+    cyan: 'theme-cyan',
+    pink: 'theme-pink'
+  };
   function applyTheme(name){
     const root = document.documentElement;
-    if(name === 'red') root.classList.add('theme-red'); else root.classList.remove('theme-red');
+    // Remove all theme classes, then add the selected one (if any)
+    for(const cls of Object.values(THEME_MAP)){
+      if(!cls) continue;
+      root.classList.remove(cls);
+    }
+    const cls = THEME_MAP[name] || '';
+    if(cls) root.classList.add(cls);
   }
   function loadTheme(){
     const v = localStorage.getItem(THEME_KEY);
-    return (v === 'red' || v === 'blue') ? v : 'blue';
+    return (v && (v in THEME_MAP)) ? v : 'blue';
   }
   function saveTheme(name){
     localStorage.setItem(THEME_KEY, name);
@@ -79,10 +94,24 @@
   applyTheme(initialTheme);
   // Reflect in Settings radios if present
   if(els.themeBlue) els.themeBlue.checked = initialTheme === 'blue';
-  if(els.themeRed) els.themeRed.checked = initialTheme === 'red';
+  els.themeRed && (els.themeRed.checked = initialTheme === 'red');
+  (document.getElementById('theme-green')||{}).checked = initialTheme === 'green';
+  (document.getElementById('theme-yellow')||{}).checked = initialTheme === 'yellow';
+  (document.getElementById('theme-purple')||{}).checked = initialTheme === 'purple';
+  (document.getElementById('theme-cyan')||{}).checked = initialTheme === 'cyan';
+  (document.getElementById('theme-pink')||{}).checked = initialTheme === 'pink';
   // Wire events
-  els.themeBlue?.addEventListener('change', (e)=>{ if(e.target.checked){ applyTheme('blue'); saveTheme('blue'); }});
-  els.themeRed?.addEventListener('change', (e)=>{ if(e.target.checked){ applyTheme('red'); saveTheme('red'); }});
+  function wireTheme(id, name){
+    const el = document.getElementById(id);
+    el?.addEventListener('change', (e)=>{ if(e.target.checked){ applyTheme(name); saveTheme(name); }});
+  }
+  wireTheme('theme-blue','blue');
+  wireTheme('theme-red','red');
+  wireTheme('theme-green','green');
+  wireTheme('theme-yellow','yellow');
+  wireTheme('theme-purple','purple');
+  wireTheme('theme-cyan','cyan');
+  wireTheme('theme-pink','pink');
 
   // Noir background: update CSS vars based on mouse position (0..1)
   (function(){
