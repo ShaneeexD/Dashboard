@@ -7,6 +7,14 @@
     viewTitle: document.getElementById('view-title'),
     themeBlue: document.getElementById('theme-blue'),
     themeRed: document.getElementById('theme-red'),
+    themeGreen: document.getElementById('theme-green'),
+    themeYellow: document.getElementById('theme-yellow'),
+    themePurple: document.getElementById('theme-purple'),
+    themeCyan: document.getElementById('theme-cyan'),
+    themePink: document.getElementById('theme-pink'),
+    themeColorBlind: document.getElementById('theme-colorblind'),
+    themeCustom: document.getElementById('theme-custom'),
+    customColor: document.getElementById('custom-color'),
     healthDot: document.getElementById('health-dot'),
     healthText: document.getElementById('health-text'),
     serverStatus: document.getElementById('server-status'),
@@ -62,7 +70,8 @@
   let lastNpcJson = '';
 
   // Theme handling
-  const THEME_KEY = 'sod_theme'; // 'blue' | 'red' | 'green' | 'yellow' | 'purple' | 'cyan' | 'pink'
+  const THEME_KEY = 'sod_theme'; // 'blue' | 'red' | 'green' | 'yellow' | 'purple' | 'cyan' | 'pink' | 'colorblind' | 'custom'
+  const THEME_CUSTOM_KEY = 'sod_theme_custom';
   const THEME_MAP = {
     blue: '',
     red: 'theme-red',
@@ -70,7 +79,9 @@
     yellow: 'theme-yellow',
     purple: 'theme-purple',
     cyan: 'theme-cyan',
-    pink: 'theme-pink'
+    pink: 'theme-pink',
+    colorblind: 'theme-colorblind',
+    custom: ''
   };
   function applyTheme(name){
     const root = document.documentElement;
@@ -81,6 +92,12 @@
     }
     const cls = THEME_MAP[name] || '';
     if(cls) root.classList.add(cls);
+    // Reset any custom inline overrides when switching away from custom
+    if(name !== 'custom'){
+      clearCustomVars();
+    } else {
+      applyCustomFromStorage();
+    }
   }
   function loadTheme(){
     const v = localStorage.getItem(THEME_KEY);
@@ -89,17 +106,46 @@
   function saveTheme(name){
     localStorage.setItem(THEME_KEY, name);
   }
+  function hexToRgb(hex){
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '');
+    if(!m) return {r:0,g:179,b:255};
+    return { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) };
+  }
+  function setCustomVars(hex){
+    const {r,g,b} = hexToRgb(hex);
+    const root = document.documentElement.style;
+    const rgba12 = `rgba(${r}, ${g}, ${b}, 0.12)`;
+    const rgba06 = `rgba(${r}, ${g}, ${b}, 0.06)`;
+    root.setProperty('--neon-blue', hex);
+    root.setProperty('--neon-blue-2', hex);
+    root.setProperty('--accent', hex);
+    root.setProperty('--accent-2', hex);
+    root.setProperty('--bg-tint', rgba12);
+    root.setProperty('--scan-tint', rgba06);
+  }
+  function clearCustomVars(){
+    const root = document.documentElement.style;
+    ['--neon-blue','--neon-blue-2','--accent','--accent-2','--bg-tint','--scan-tint'].forEach(v=>root.removeProperty(v));
+  }
+  function applyCustomFromStorage(){
+    const hex = localStorage.getItem(THEME_CUSTOM_KEY) || '#00b3ff';
+    if(els.customColor) els.customColor.value = hex;
+    setCustomVars(hex);
+  }
   // Initialize theme immediately
   const initialTheme = loadTheme();
   applyTheme(initialTheme);
   // Reflect in Settings radios if present
   if(els.themeBlue) els.themeBlue.checked = initialTheme === 'blue';
   els.themeRed && (els.themeRed.checked = initialTheme === 'red');
-  (document.getElementById('theme-green')||{}).checked = initialTheme === 'green';
-  (document.getElementById('theme-yellow')||{}).checked = initialTheme === 'yellow';
-  (document.getElementById('theme-purple')||{}).checked = initialTheme === 'purple';
-  (document.getElementById('theme-cyan')||{}).checked = initialTheme === 'cyan';
-  (document.getElementById('theme-pink')||{}).checked = initialTheme === 'pink';
+  els.themeGreen && (els.themeGreen.checked = initialTheme === 'green');
+  els.themeYellow && (els.themeYellow.checked = initialTheme === 'yellow');
+  els.themePurple && (els.themePurple.checked = initialTheme === 'purple');
+  els.themeCyan && (els.themeCyan.checked = initialTheme === 'cyan');
+  els.themePink && (els.themePink.checked = initialTheme === 'pink');
+  els.themeColorBlind && (els.themeColorBlind.checked = initialTheme === 'colorblind');
+  els.themeCustom && (els.themeCustom.checked = initialTheme === 'custom');
+  if(initialTheme === 'custom') applyCustomFromStorage();
   // Wire events
   function wireTheme(id, name){
     const el = document.getElementById(id);
@@ -112,6 +158,23 @@
   wireTheme('theme-purple','purple');
   wireTheme('theme-cyan','cyan');
   wireTheme('theme-pink','pink');
+  wireTheme('theme-colorblind','colorblind');
+  // Custom theme interactions
+  document.getElementById('theme-custom')?.addEventListener('change', (e)=>{
+    if(e.target.checked){
+      const hex = (els.customColor?.value)||'#00b3ff';
+      localStorage.setItem(THEME_CUSTOM_KEY, hex);
+      saveTheme('custom');
+      applyTheme('custom');
+    }
+  });
+  els.customColor?.addEventListener('input', (e)=>{
+    const hex = e.target.value;
+    localStorage.setItem(THEME_CUSTOM_KEY, hex);
+    if(document.getElementById('theme-custom')?.checked){
+      setCustomVars(hex);
+    }
+  });
 
   // Noir background: update CSS vars based on mouse position (0..1)
   (function(){

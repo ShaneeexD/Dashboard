@@ -66,6 +66,15 @@
   --bg-tint: rgba(255,59,241,0.12);
   --scan-tint: rgba(255,59,241,0.06);
 }
+/* Color-blind friendly theme (teal + amber, high contrast) */
+.theme-colorblind{
+  --accent:#ffb000;   /* amber for highlights */
+  --accent-2:#ffd166;
+  --neon-blue:#00b5ad; /* teal for neon lines */
+  --neon-blue-2:#64d8d3;
+  --bg-tint: rgba(0,181,173,0.12);
+  --scan-tint: rgba(0,181,173,0.06);
+}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
@@ -226,8 +235,8 @@ select.input option{background:var(--bg-elev); color:var(--text)}
 .npc-card::before{
   content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; padding:1px;
   background:linear-gradient(90deg, var(--neon-blue), var(--neon-blue-2));
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; /* Chrome/Safari */
   mask-composite: exclude;      /* Firefox */
   opacity:0; transition:opacity .16s ease, filter .16s ease;
