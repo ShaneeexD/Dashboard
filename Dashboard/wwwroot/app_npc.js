@@ -120,17 +120,17 @@
         }
       }
 
-      // KO Bar
+      // KO Bar (no interpolation - poll-based only)
       const isKo = !!n.isKo;
       const koTotal = Number(n.koTotalSeconds) || 0;
       const koRemain = Number(n.koRemainingSeconds) || 0;
       if (isKo && koTotal > 0 && koRemain >= 0) {
         const kpct = Math.max(0, Math.min(100, (koRemain / koTotal) * 100));
-        els.koFill && (els.koFill.style.width = kpct.toFixed(0) + '%');
-        els.koBar && els.koBar.classList.remove('hidden');
+        if (els.koFill) els.koFill.style.width = kpct.toFixed(0) + '%';
+        if (els.koBar) els.koBar.classList.remove('hidden');
       } else {
         if (els.koFill) els.koFill.style.width = '0%';
-        els.koBar && els.koBar.classList.add('hidden');
+        if (els.koBar) els.koBar.classList.add('hidden');
       }
       
       // Job information
@@ -143,6 +143,8 @@
     }catch{}
   }
 
+  // No interpolation loop
+
   if(els.devTeleportPlayer){
     els.devTeleportPlayer.addEventListener('click', () => runNpcAction('teleport-player'));
   }
@@ -153,6 +155,6 @@
   // initial + polling
   fetchHealth();
   loadNpc();
-  setInterval(fetchHealth, 5000);
+  setInterval(fetchHealth, 2000);
   setInterval(loadNpc, 2000);
 })();

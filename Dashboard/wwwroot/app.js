@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-  const views = ['home','npcs','map','stats','settings'];
+  const views = ['home','npcs','player','map','stats','settings'];
   const els = {
     navItems: Array.from(document.querySelectorAll('.nav-item')),
     viewTitle: document.getElementById('view-title'),
@@ -22,8 +22,13 @@
     npcDetPhoto: document.getElementById('npc-det-photo'),
     npcDetName: document.getElementById('npc-det-name'),
     npcDetSurname: document.getElementById('npc-det-surname'),
-    npcDetHpFill: document.getElementById('npc-det-hpfill')
+    npcDetHpFill: document.getElementById('npc-det-hpfill'),
+    // Player view
+    playerPreset: document.getElementById('player-preset'),
+    playerSpawn: document.getElementById('player-spawn'),
+    playerStatus: document.getElementById('player-status')
   };
+  let playerPresetsLoaded = false;
   let npcCache = [];
   let selectedNpcId = null;
 
@@ -34,6 +39,7 @@
     els.viewTitle.textContent = ({
       home: 'Overview',
       npcs: 'NPCs',
+      player: 'Player',
       map: 'Map',
       stats: 'Stats',
       settings: 'Settings'
@@ -42,6 +48,9 @@
     if(name === 'npcs'){
       // lazy load when entering NPCs view
       if(npcCache.length === 0) fetchNpcs();
+    }
+    if(name === 'player'){
+      if(!playerPresetsLoaded) fetchPlayerPresets();
     }
   }
 
@@ -56,6 +65,71 @@
       setActiveView(v);
     }
   }));
+
+  function setPlayerStatus(message, tone='info'){
+    if(!els.playerStatus) return;
+    els.playerStatus.textContent = message;
+    els.playerStatus.classList.remove('dev-status-info','dev-status-ok','dev-status-error');
+    const cls = tone === 'ok' ? 'dev-status-ok' : tone === 'error' ? 'dev-status-error' : 'dev-status-info';
+    els.playerStatus.classList.add(cls);
+  }
+
+  async function fetchPlayerPresets(){
+    try{
+      setPlayerStatus('Loading presets…','info');
+      let list = [];
+      // Try live API first
+      try{
+        const r1 = await fetch('/api/player/presets', { cache: 'no-store' });
+        if(r1.ok){
+          const arr = await r1.json();
+          if(Array.isArray(arr) && arr.length){
+            list = arr;
+          }
+        }
+      }catch{}
+      // Fallback to local JSON
+      if(!list.length){
+        const r2 = await fetch('./presets.json', { cache: 'no-store' });
+        if(r2.ok){
+          const data = await r2.json();
+          list = Array.isArray(data?.InteractablePreset) ? data.InteractablePreset : [];
+        }
+      }
+      if(els.playerPreset){
+        els.playerPreset.innerHTML = '';
+        for(const name of list){
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          els.playerPreset.appendChild(opt);
+        }
+        playerPresetsLoaded = true;
+      }
+      setPlayerStatus(list.length ? 'Presets loaded.' : 'No presets found.', list.length ? 'ok' : 'error');
+    }catch(err){
+      setPlayerStatus('Failed to load presets.','error');
+    }
+  }
+
+  async function spawnSelectedPreset(){
+    const name = els.playerPreset?.value;
+    if(!name){ setPlayerStatus('Please select a preset.','error'); return; }
+    try{
+      setPlayerStatus('Spawning…','info');
+      const res = await fetch('/api/player/spawn-item?preset=' + encodeURIComponent(name), { method:'POST', cache:'no-store' });
+      const data = await res.json().catch(()=>({}));
+      if(!res.ok || data.success === false){
+        setPlayerStatus(data.message || ('Failed ('+res.status+')'), 'error');
+      }else{
+        setPlayerStatus(data.message || 'Spawned to inventory.', 'ok');
+      }
+    }catch(err){
+      setPlayerStatus('Failed: ' + (err?.message || err), 'error');
+    }
+  }
+
+  // spawnDefaultInventory removed (unsafe)
 
   async function fetchHealth(){
     try{
@@ -183,6 +257,9 @@
   els.npcRefresh?.addEventListener('click', fetchNpcs);
   els.npcSearch?.addEventListener('input', () => renderNpcs());
 
+  // Player view actions
+  els.playerSpawn?.addEventListener('click', spawnSelectedPreset);
+
   // Click to open details in a new page
   els.npcList?.addEventListener('click', (e) => {
     const card = e.target.closest('.npc-card');
@@ -204,8 +281,8 @@
   setActiveView(getInitialView());
   fetchHealth();
   fetchGame();
-  setInterval(fetchHealth, 5000);
-  setInterval(fetchGame, 5000);
+  setInterval(fetchHealth, 2000);
+  setInterval(fetchGame, 2000);
   // Poll NPCs periodically when on NPCs view
   setInterval(() => {
     const isOnNpcs = document.getElementById('view-npcs')?.classList.contains('active');

@@ -24,6 +24,9 @@
         <a class="nav-item" href="?view=npcs" data-view="npcs">
           <span>NPCs</span>
         </a>
+        <a class="nav-item" href="?view=player" data-view="player">
+          <span>Player</span>
+        </a>
         <a class="nav-item" href="?view=map" data-view="map">
           <span>Map</span>
         </a>
@@ -87,6 +90,27 @@
           <button id="npc-refresh" class="btn">Refresh</button>
         </div>
         <div id="npc-list" class="npc-list"></div>
+      </section>
+
+      <section id="view-player" class="view">
+        <div class="section-header">
+          <h2>Player</h2>
+        </div>
+        <div class="card">
+          <div class="card-title">Spawn Item To Inventory</div>
+          <div class="kv">
+            <div class="form-row">
+              <label class="k" for="player-preset">Preset:</label>
+              <span class="v">
+                <select id="player-preset" class="input" aria-label="Interactable preset"></select>
+              </span>
+            </div>
+            <div class="row-actions">
+              <button id="player-spawn" class="btn">Spawn Selected</button>
+            </div>
+            <div id="player-status" class="dev-status dev-status-info mt-10">—</div>
+          </div>
+        </div>
       </section>
 
       <section id="view-map" class="view">

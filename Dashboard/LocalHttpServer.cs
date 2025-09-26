@@ -225,6 +225,12 @@ namespace Dashboard
                 return;
             }
 
+            if (target.StartsWith("/api/player/", StringComparison.OrdinalIgnoreCase))
+            {
+                HandlePlayerAction(writer, method, target);
+                return;
+            }
+
             // List NPCs
             if (target.Equals("/api/npcs", StringComparison.OrdinalIgnoreCase))
             {
@@ -249,6 +255,171 @@ namespace Dashboard
 
 
             WriteSimpleResponse(writer, 404, "Not Found", "Unknown API endpoint");
+        }
+
+        private void HandlePlayerAction(StreamWriter writer, string method, string target)
+        {
+            // GET /api/player/presets -> list inventory-capable interactable presets
+            if (target.StartsWith("/api/player/presets", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+                {
+                    WriteSimpleResponse(writer, 405, "Method Not Allowed", "Use GET for this endpoint");
+                    return;
+                }
+                try
+                {
+                    var names = Plugin.RunSync(() =>
+                    {
+                        var list = new List<string>();
+                        try
+                        {
+                            var presets = AssetLoader.Instance.GetAllInteractables();
+                            if (presets != null)
+                            {
+                                foreach (var p in presets)
+                                {
+                                    if (p == null) continue;
+                                    if (p.spawnable) list.Add(p.presetName);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            ModLogger.Warn($"Error enumerating presets: {ex.Message}");
+                        }
+                        list.Sort(StringComparer.OrdinalIgnoreCase);
+                        return list;
+                    }, 10000);
+
+                    var sb = new StringBuilder();
+                    sb.Append('[');
+                    for (int i = 0; i < names.Count; i++)
+                    {
+                        if (i > 0) sb.Append(',');
+                        sb.Append('"').Append(JsonEscape(names[i])).Append('"');
+                    }
+                    sb.Append(']');
+                    WriteJson(writer, 200, sb.ToString());
+                }
+                catch (Exception ex)
+                {
+                    WriteSimpleResponse(writer, 500, "Internal Server Error", ex.Message);
+                }
+                return;
+            }
+
+            // POST /api/player/spawn-item?preset=NAME
+            if (target.StartsWith("/api/player/spawn-item", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(method, "POST", StringComparison.OrdinalIgnoreCase))
+                {
+                    WriteSimpleResponse(writer, 405, "Method Not Allowed", "Use POST for this endpoint");
+                    return;
+                }
+                string presetName = GetQueryValue(target, "preset");
+                if (string.IsNullOrWhiteSpace(presetName))
+                {
+                    WriteSimpleResponse(writer, 400, "Bad Request", "Missing preset parameter");
+                    return;
+                }
+
+                (bool ok, string message) result;
+                try
+                {
+                    result = Plugin.RunSync(() =>
+                    {
+                        var player = Player.Instance;
+                        if (player == null) return (false, "Player not available");
+                        // Find preset by name (case-insensitive) via Addressables cache
+                        InteractablePreset match = null;
+                        var presets = AssetLoader.Instance.GetAllInteractables();
+                        if (presets != null)
+                        {
+                            foreach (var p in presets)
+                            {
+                                if (p != null && string.Equals(p.presetName, presetName, StringComparison.OrdinalIgnoreCase)) { match = p; break; }
+                            }
+                        }
+                        if (match == null) return (false, $"Preset not found: {presetName}");
+
+                        var interactable = InteractableCreator.Instance.CreateWorldInteractable(match, player, player, null, player.transform.position, player.transform.eulerAngles, null, null, "");
+                        if (interactable == null) return (false, "Failed to spawn interactable");
+                        interactable.SetSpawnPositionRelevent(false);
+                        bool picked = FirstPersonItemController.Instance.PickUpItem(interactable, false, false, true, true, true);
+                        if (picked)
+                        {
+                            interactable.MarkAsTrash(true, false, 0f);
+                            return (true, $"Spawned '{match.presetName}' to inventory.");
+                        }
+                        // Failed to pick up; delete spawned world object
+                        interactable.Delete();
+                        return (false, "Failed to add item to inventory (not an inventory item or slot not available)");
+                    }, 10000);
+                }
+                catch (Exception ex)
+                {
+                    result = (false, ex.Message);
+                }
+
+                string json = $"{{\"success\":{(result.ok ? "true" : "false")},\"message\":\"{JsonEscape(result.message)}\"}}";
+                WriteJson(writer, result.ok ? 200 : 500, json);
+                return;
+            }
+
+            // POST /api/player/spawn-default -> call Human.SpawnInventoryItems on player
+            if (target.StartsWith("/api/player/spawn-default", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(method, "POST", StringComparison.OrdinalIgnoreCase))
+                {
+                    WriteSimpleResponse(writer, 405, "Method Not Allowed", "Use POST for this endpoint");
+                    return;
+                }
+                (bool ok, string message) result;
+                try
+                {
+                    result = Plugin.RunSync(() =>
+                    {
+                        var player = Player.Instance;
+                        if (player == null) return (false, "Player not available");
+                        var human = player as Human;
+                        if (human == null) return (false, "Player is not a Human instance");
+                        human.SpawnInventoryItems();
+                        return (true, "Spawned default inventory items.");
+                    }, 10000);
+                }
+                catch (Exception ex)
+                {
+                    result = (false, ex.Message);
+                }
+
+                string json = $"{{\"success\":{(result.ok ? "true" : "false")},\"message\":\"{JsonEscape(result.message)}\"}}";
+                WriteJson(writer, result.ok ? 200 : 500, json);
+                return;
+            }
+
+            WriteSimpleResponse(writer, 404, "Not Found", "Unknown player API endpoint");
+        }
+
+        private static string GetQueryValue(string target, string key)
+        {
+            try
+            {
+                int q = target.IndexOf('?');
+                if (q < 0) return null;
+                string qs = target.Substring(q + 1);
+                var parts = qs.Split('&', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var part in parts)
+                {
+                    var kv = part.Split('=', 2);
+                    if (kv.Length == 2 && string.Equals(kv[0], key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return WebUtility.UrlDecode(kv[1]);
+                    }
+                }
+            }
+            catch { }
+            return null;
         }
 
         private void HandleNpcAction(StreamWriter writer, string method, string target)

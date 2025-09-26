@@ -12,6 +12,7 @@ Desktop.ini
 *.swp
 *.swo
 *.dll
+soMap.json
 # --- IDE files ---
 .vs/
 .vscode/

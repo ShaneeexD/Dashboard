@@ -142,6 +142,11 @@ body{
 .dev-status-ok{color:#11d67a}
 .dev-status-error{color:#e05555}
 
+/* Utilities */
+.form-row{display:flex; align-items:center; gap:8px}
+.row-actions{margin-top:8px; display:flex; gap:8px}
+.mt-10{margin-top:10px}
+
 @media (max-width: 900px){
   .layout{grid-template-columns:1fr}
   .sidebar{position:sticky; top:0; z-index:10; border-right:none; border-bottom:1px solid var(--border); flex-direction:row; align-items:center}
