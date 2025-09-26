@@ -1,6 +1,14 @@
 'use strict';
 
 (function(){
+  // Theme: apply saved theme immediately
+  try{
+    const THEME_KEY = 'sod_theme';
+    const t = localStorage.getItem(THEME_KEY);
+    if(t === 'red') document.documentElement.classList.add('theme-red');
+    else document.documentElement.classList.remove('theme-red');
+  }catch{}
+
   const els = {
     dot: document.getElementById('health-dot'),
     text: document.getElementById('health-text'),

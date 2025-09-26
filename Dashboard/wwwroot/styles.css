@@ -13,6 +13,17 @@
   --neon-blue:#0077b6;
   --neon-blue-2:#0099cc;
   --sidebar-width:280px;
+  --bg-tint: rgba(109,197,255,0.10);
+  --scan-tint: rgba(109,197,255,0.05);
+}
+/* Theme: Red Neon (overrides key color variables) */
+.theme-red{
+  --accent:#ff6b6b;
+  --accent-2:#ffb199;
+  --neon-blue:#ff3b5c;
+  --neon-blue-2:#ff7a7a;
+  --bg-tint: rgba(255,59,92,0.12);
+  --scan-tint: rgba(255,59,92,0.06);
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -20,7 +31,7 @@ body{
   margin:0;
   font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
   color:var(--text);
-  background:radial-gradient(1200px 800px at 10% -20%, rgba(109,197,255,0.1), transparent 60%),
+  background:radial-gradient(1200px 800px at 10% -20%, var(--bg-tint), transparent 60%),
              var(--bg);
 }
 
@@ -93,7 +104,7 @@ body{
 .noir-background .parallax-layer{position:absolute; inset:0}
 .noir-background .grid-layer{position:absolute; inset:0; opacity:0.14; background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 24px 24px, 24px 24px; transform: translateX(calc((var(--mouse-x) - 0.5)*8px)) translateY(calc((var(--mouse-y) - 0.5)*8px)); transition: transform .4s ease-out}
 .noir-background .grid-layer::after{content:""; position:absolute; inset:0; background-image: linear-gradient(rgba(109,197,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(122,243,197,0.04) 1px, transparent 1px); background-size: 96px 96px, 96px 96px; mix-blend-mode:screen; opacity:0.25}
-.noir-background .scan-sweep{position:absolute; inset:-20% 0 auto 0; height:40%; background:linear-gradient(180deg, transparent, rgba(109,197,255,0.05), transparent); transform: translateY(calc((var(--mouse-y) - 0.5)*-20px)); animation:nb-scan 14s linear infinite; opacity:.35}
+.noir-background .scan-sweep{position:absolute; inset:-20% 0 auto 0; height:40%; background:linear-gradient(180deg, transparent, var(--scan-tint), transparent); transform: translateY(calc((var(--mouse-y) - 0.5)*-20px)); animation:nb-scan 14s linear infinite; opacity:.35}
 @keyframes nb-scan{0%{top:-40%}100%{top:140%}}
 .noir-background .glow-orb-1,.noir-background .glow-orb-2{position:absolute; border-radius:50%; will-change:transform; transition:transform .6s ease-out}
 .noir-background .glow-orb-1{width:280px; height:280px; top:12%; right:20%; background:radial-gradient(circle, color-mix(in oklab, var(--accent) 12%, transparent) 0%, transparent 70%); transform:translateX(calc(var(--mouse-x)*-60px + 30px)) translateY(calc(var(--mouse-y)*-40px + 20px)); animation:nb-float 16s ease-in-out infinite}

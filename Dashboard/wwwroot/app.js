@@ -5,6 +5,8 @@
   const els = {
     navItems: Array.from(document.querySelectorAll('.nav-item')),
     viewTitle: document.getElementById('view-title'),
+    themeBlue: document.getElementById('theme-blue'),
+    themeRed: document.getElementById('theme-red'),
     healthDot: document.getElementById('health-dot'),
     healthText: document.getElementById('health-text'),
     serverStatus: document.getElementById('server-status'),
@@ -58,6 +60,29 @@
   let selectedNpcId = null;
   let playerStatusTimer = null;
   let lastNpcJson = '';
+
+  // Theme handling
+  const THEME_KEY = 'sod_theme'; // 'blue' | 'red'
+  function applyTheme(name){
+    const root = document.documentElement;
+    if(name === 'red') root.classList.add('theme-red'); else root.classList.remove('theme-red');
+  }
+  function loadTheme(){
+    const v = localStorage.getItem(THEME_KEY);
+    return (v === 'red' || v === 'blue') ? v : 'blue';
+  }
+  function saveTheme(name){
+    localStorage.setItem(THEME_KEY, name);
+  }
+  // Initialize theme immediately
+  const initialTheme = loadTheme();
+  applyTheme(initialTheme);
+  // Reflect in Settings radios if present
+  if(els.themeBlue) els.themeBlue.checked = initialTheme === 'blue';
+  if(els.themeRed) els.themeRed.checked = initialTheme === 'red';
+  // Wire events
+  els.themeBlue?.addEventListener('change', (e)=>{ if(e.target.checked){ applyTheme('blue'); saveTheme('blue'); }});
+  els.themeRed?.addEventListener('change', (e)=>{ if(e.target.checked){ applyTheme('red'); saveTheme('red'); }});
 
   // Noir background: update CSS vars based on mouse position (0..1)
   (function(){
