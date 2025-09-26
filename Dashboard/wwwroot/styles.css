@@ -185,6 +185,33 @@ body{
 /* Settings theme radio spacing */
 .theme-options label{margin-right:14px}
 
+/* Console */
+.console-output{
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%), var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+  height:60vh;
+  overflow:auto;
+  font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size:12px;
+  line-height:1.35;
+  white-space:pre-wrap;
+}
+.console-output .log-line{display:flex; align-items:flex-start; gap:8px; padding:2px 4px; border-radius:6px}
+.console-output .log-line:hover{background:rgba(255,255,255,0.03)}
+.console-output .log-ts{color:var(--muted); flex:0 0 auto; opacity:.85; margin-left:auto}
+.console-output .log-level{text-transform:uppercase; font-weight:600; font-size:10px; letter-spacing:.04em; padding:1px 6px; border-radius:999px; border:1px solid var(--border); opacity:.9}
+.console-output .log-msg{white-space:pre-wrap; word-break:break-word; flex:1 1 auto}
+.console-output .level-info .log-level{color:#9fb0c1}
+.console-output .level-warn .log-level{color:#ffd166}
+.console-output .level-error .log-level{color:#ff6b6b}
+
+/* Utility margins */
+.ml-6{margin-left:6px}
+.ml-8{margin-left:8px}
+.ml-12{margin-left:12px}
+
 .view{display:none; padding:24px 28px}
 .view.active{display:block}
 .cards{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:16px}

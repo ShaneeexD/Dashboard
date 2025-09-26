@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-  const views = ['home','npcs','player','map','stats','settings'];
+  const views = ['home','console','npcs','player','map','stats','settings'];
   const els = {
     navItems: Array.from(document.querySelectorAll('.nav-item')),
     viewTitle: document.getElementById('view-title'),
@@ -15,6 +15,14 @@
     themeColorBlind: document.getElementById('theme-colorblind'),
     themeCustom: document.getElementById('theme-custom'),
     customColor: document.getElementById('custom-color'),
+    // Console
+    logsOutput: document.getElementById('logs-output'),
+    logsRefresh: document.getElementById('logs-refresh'),
+    logsLive: document.getElementById('logs-live'),
+    logsTail: document.getElementById('logs-tail'),
+    logsPath: document.getElementById('logs-path'),
+    logsFilter: document.getElementById('logs-filter'),
+    logsAutoscroll: document.getElementById('logs-autoscroll'),
     healthDot: document.getElementById('health-dot'),
     healthText: document.getElementById('health-text'),
     serverStatus: document.getElementById('server-status'),
@@ -68,6 +76,8 @@
   let selectedNpcId = null;
   let playerStatusTimer = null;
   let lastNpcJson = '';
+  let logsTimer = null;
+  let rawLogs = '';
 
   // Theme handling
   const THEME_KEY = 'sod_theme'; // 'blue' | 'red' | 'green' | 'yellow' | 'purple' | 'cyan' | 'pink' | 'colorblind' | 'custom'
@@ -204,6 +214,7 @@
     els.navItems.forEach(i => i.classList.toggle('active', i.getAttribute('data-view') === name));
     els.viewTitle.textContent = ({
       home: 'Overview',
+      console: 'Console',
       npcs: 'NPCs',
       player: 'Player',
       map: 'Map',
@@ -218,6 +229,12 @@
     if(name === 'player'){
       if(!playerPresetsLoaded) fetchPlayerPresets();
       startPlayerStatusPolling();
+    }
+    if(name === 'console'){
+      fetchLogs();
+      startLogsPolling();
+    } else {
+      stopLogsPolling();
     }
   }
 
@@ -498,6 +515,30 @@
   els.npcRefresh?.addEventListener('click', fetchNpcs);
   els.npcSearch?.addEventListener('input', () => renderNpcs());
   els.playerSearch?.addEventListener('input', () => renderPlayerPresets());
+  // Console events
+  els.logsRefresh?.addEventListener('click', fetchLogs);
+  els.logsLive?.addEventListener('change', () => {
+    const isOnConsole = document.getElementById('view-console')?.classList.contains('active');
+    if(isOnConsole){ els.logsLive.checked ? startLogsPolling() : stopLogsPolling(); }
+  });
+  els.logsTail?.addEventListener('change', () => fetchLogs());
+  els.logsFilter?.addEventListener('input', () => renderLogs());
+  els.logsAutoscroll?.addEventListener('change', () => {
+    if(els.logsAutoscroll.checked){
+      // If turning on, snap to bottom if on console
+      const isOnConsole = document.getElementById('view-console')?.classList.contains('active');
+      if(isOnConsole){
+        els.logsOutput.scrollTop = els.logsOutput.scrollHeight;
+      }
+    }
+  });
+  els.logsOutput?.addEventListener('scroll', () => {
+    // If user scrolls away from bottom, pause autoscroll automatically
+    const nearBottom = (els.logsOutput.scrollHeight - els.logsOutput.scrollTop - els.logsOutput.clientHeight) < 20;
+    if(!nearBottom && els.logsAutoscroll && els.logsAutoscroll.checked){
+      els.logsAutoscroll.checked = false;
+    }
+  });
 
   // Player view actions
   els.playerSpawn?.addEventListener('click', spawnSelectedPreset);
@@ -535,4 +576,90 @@
     const isOnNpcs = document.getElementById('view-npcs')?.classList.contains('active');
     if(isOnNpcs) fetchNpcs();
   }, 2000);
+
+  // Logs polling helpers
+  async function fetchLogs(){
+    if(!els.logsOutput) return;
+    try{
+      const tail = Number(els.logsTail?.value || 500) || 500;
+      const res = await fetch(`/api/logs?tail=${tail}`, { cache: 'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if(els.logsPath) els.logsPath.textContent = data.exists ? data.path : 'Log not found';
+      rawLogs = data.content || '';
+      renderLogs();
+    }catch(err){
+      if(els.logsOutput) els.logsOutput.textContent = 'Failed to read logs';
+    }
+  }
+
+  function startLogsPolling(){
+    stopLogsPolling();
+    if(els.logsLive && els.logsLive.checked){
+      logsTimer = setInterval(() => {
+        const isOnConsole = document.getElementById('view-console')?.classList.contains('active');
+        if(isOnConsole) fetchLogs();
+      }, 1500);
+    }
+  }
+  function stopLogsPolling(){
+    if(logsTimer){ clearInterval(logsTimer); logsTimer = null; }
+  }
+
+  function escapeHtml(s){
+    return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+  }
+
+  function getFilterPredicate(){
+    const q = (els.logsFilter?.value || '').trim();
+    if(!q) return () => true;
+    if(q.length >= 2 && q.startsWith('/') && q.endsWith('/')){
+      try{ const re = new RegExp(q.slice(1,-1), 'i'); return (line) => re.test(line); }catch{ /* ignore */ }
+    }
+    const low = q.toLowerCase();
+    return (line) => line.toLowerCase().includes(low);
+  }
+
+  const tsRegexes = [
+    /^\[?(\d{4}[-\/]\d{2}[-\/]\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)\]?\s?-?\s?/,
+    /^\[?(\d{2}:\d{2}:\d{2})\]?\s?-?\s?/
+  ];
+
+  function parseLine(line){
+    let ts = '';
+    let rest = line;
+    for(const re of tsRegexes){
+      const m = rest.match(re);
+      if(m){ ts = m[1]; rest = rest.slice(m[0].length); break; }
+    }
+    // Level detection (simple heuristics)
+    const low = rest.toLowerCase();
+    let level = 'info';
+    if(low.includes('exception') || low.includes('error') || low.includes('fail')) level = 'error';
+    else if(low.includes('warn')) level = 'warn';
+    return { ts, level, msg: rest };
+  }
+
+  function renderLogs(){
+    if(!els.logsOutput) return;
+    const wasNearBottom = (els.logsOutput.scrollHeight - els.logsOutput.scrollTop - els.logsOutput.clientHeight) < 60;
+    const pred = getFilterPredicate();
+    const lines = (rawLogs || '').split('\n');
+    const out = [];
+    for(let i=0;i<lines.length;i++){
+      const original = lines[i];
+      if(!pred(original)) continue;
+      const { ts, level, msg } = parseLine(original);
+      const cls = level === 'error' ? 'level-error' : (level === 'warn' ? 'level-warn' : 'level-info');
+      out.push(`<div class=\"log-line ${cls}\">`
+        + `<span class=\"log-level\">${level}</span>`
+        + `<span class=\"log-msg\">${escapeHtml(msg)}</span>`
+        + (ts ? `<span class=\"log-ts\">${escapeHtml(ts)}</span>` : ``)
+        + `</div>`);
+    }
+    els.logsOutput.innerHTML = out.length ? out.join('') : '<div class="log-line"><span class="log-msg">No log lines</span></div>';
+    if(els.logsAutoscroll && els.logsAutoscroll.checked && wasNearBottom){
+      els.logsOutput.scrollTop = els.logsOutput.scrollHeight;
+    }
+  }
 })();

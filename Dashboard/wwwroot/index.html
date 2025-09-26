@@ -66,6 +66,9 @@
         <a class="nav-item" href="?view=stats" data-view="stats">
           <span>Stats</span>
         </a>
+        <a class="nav-item" href="?view=console" data-view="console">
+          <span>Console</span>
+        </a>
         <div class="spacer"></div>
         <a class="nav-item" href="?view=settings" data-view="settings">
           <span>Settings</span>
@@ -112,6 +115,26 @@
             </ul>
           </div>
         </div>
+      </section>
+
+      <section id="view-console" class="view">
+        <div class="toolbar">
+          <button id="logs-refresh" class="btn">Refresh</button>
+          <label class="metric-label ml-8"><input type="checkbox" id="logs-live" checked> Live</label>
+          <label class="metric-label ml-8"><input type="checkbox" id="logs-autoscroll" checked> Autoscroll</label>
+          <label class="metric-label ml-12">Tail:
+            <select id="logs-tail" class="input ml-6">
+              <option value="200">200</option>
+              <option value="500" selected>500</option>
+              <option value="1000">1000</option>
+              <option value="2000">2000</option>
+            </select>
+          </label>
+          <input id="logs-filter" class="input ml-12" type="text" placeholder="Filter (substring or /regex/)" />
+          <div class="spacer"></div>
+          <div id="logs-path" class="metric-label">—</div>
+        </div>
+        <div id="logs-output" class="console-output">Loading…</div>
       </section>
 
       <section id="view-npcs" class="view">

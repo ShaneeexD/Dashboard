@@ -210,6 +210,63 @@ namespace Dashboard
                 return;
             }
 
+            // Logs: tail Unity/BepInEx logs from common locations
+            if (target.StartsWith("/api/logs", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+                {
+                    WriteSimpleResponse(writer, 405, "Method Not Allowed", "Use GET for this endpoint");
+                    return;
+                }
+                try
+                {
+                    int tail = 500;
+                    string tStr = GetQueryValue(target, "tail");
+                    if (!string.IsNullOrEmpty(tStr) && int.TryParse(tStr, out int tVal)) tail = Math.Max(50, Math.Min(5000, tVal));
+
+                    string baseDir = Application.persistentDataPath ?? string.Empty;
+                    string gameRoot = null;
+                    try { var dataPath = Application.dataPath; if(!string.IsNullOrWhiteSpace(dataPath)) gameRoot = Path.GetDirectoryName(dataPath); } catch { }
+                    var candidates = new List<string>();
+                    // PersistentDataPath logs (Unity Player)
+                    candidates.Add(Path.Combine(baseDir, "Player.log"));
+                    candidates.Add(Path.Combine(baseDir, "Player-prev.log"));
+                    candidates.Add(Path.Combine(baseDir, "output_log.txt"));
+                    candidates.Add(Path.Combine(baseDir, "Game.log"));
+                    // Game root (BepInEx typical)
+                    if(!string.IsNullOrEmpty(gameRoot))
+                    {
+                        candidates.Add(Path.Combine(gameRoot, "BepInEx", "LogOutput.log"));
+                        candidates.Add(Path.Combine(gameRoot, "output_log.txt"));
+                        candidates.Add(Path.Combine(gameRoot, "Player.log"));
+                    }
+                    string foundPath = null;
+                    foreach (var pth in candidates)
+                    {
+                        try
+                        {
+                            if (!string.IsNullOrWhiteSpace(pth) && File.Exists(pth)) { foundPath = pth; break; }
+                        }
+                        catch { /* ignore */ }
+                    }
+
+                    string content = string.Empty;
+                    bool exists = !string.IsNullOrEmpty(foundPath);
+                    if (exists)
+                    {
+                        try { content = TailFile(foundPath, tail); }
+                        catch (Exception ex) { ModLogger.Warn($"/api/logs read error: {ex.Message}"); }
+                    }
+                    string json = $"{{\"path\":\"{JsonEscape(foundPath ?? Path.Combine(baseDir, "Player.log"))}\",\"exists\":{(exists ? "true" : "false")},\"content\":\"{JsonEscape(content)}\"}}";
+                    WriteJson(writer, 200, json);
+                }
+                catch (Exception ex)
+                {
+                    WriteSimpleResponse(writer, 500, "Internal Server Error", ex.Message);
+                }
+                return;
+            }
+
             // Game info (read from cache only; do not touch Unity APIs on this thread)
             if (target.Equals("/api/game", StringComparison.OrdinalIgnoreCase))
             {
@@ -770,6 +827,43 @@ namespace Dashboard
         {
             if (string.IsNullOrEmpty(s)) return string.Empty;
             return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
+        }
+
+        private static string TailFile(string filePath, int maxLines)
+        {
+            const int bufferSize = 4096;
+            var enc = Encoding.UTF8;
+            using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            long fileLength = fs.Length;
+            if (fileLength == 0) return string.Empty;
+
+            int lineCount = 0;
+            long pos = fileLength;
+            var chunk = new byte[Math.Min(bufferSize, (int)fileLength)];
+            while (pos > 0 && lineCount <= maxLines)
+            {
+                int toRead = (int)Math.Min(chunk.Length, pos);
+                pos -= toRead;
+                fs.Position = pos;
+                fs.Read(chunk, 0, toRead);
+                for (int i = toRead - 1; i >= 0; i--)
+                {
+                    if (chunk[i] == (byte)'\n')
+                    {
+                        lineCount++;
+                        if (lineCount > maxLines)
+                        {
+                            pos += i + 1; // start of next line
+                            goto READTAIL;
+                        }
+                    }
+                }
+            }
+        READTAIL:
+            fs.Position = Math.Max(0, pos);
+            using var reader = new StreamReader(fs, enc, detectEncodingFromByteOrderMarks: true, bufferSize: 8192, leaveOpen: true);
+            string rest = reader.ReadToEnd();
+            return rest ?? string.Empty;
         }
 
     }
