@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using HarmonyLib;
+using UnityEngine;
 
 namespace Dashboard
 {
@@ -109,6 +111,102 @@ namespace Dashboard
             {
                 NpcCache.UpdateHealth(citizen.humanID, __instance.currentHealth, __instance.maximumHealth);
             }
+        }
+    }
+
+    // Runtime in-memory log buffer to capture Game.Log and Game.LogError for the dashboard console
+    internal static class RuntimeLogBuffer
+    {
+        internal struct Entry { public DateTime ts; public string level; public string msg; }
+        private static readonly object _lock = new object();
+        private static readonly List<Entry> _entries = new List<Entry>(4096);
+        private const int MAX = 5000;
+        private static string FormatObject(object obj)
+        {
+            try
+            {
+                if (obj == null) return "null";
+                if (obj is string s) return s;
+#if true
+                // Handle IL2CPP string/object types gracefully
+                try { if (obj is Il2CppSystem.String ils) return ils?.ToString(); } catch { }
+                try { if (obj is Il2CppSystem.Object ilo)
+                    {
+                        // If the object is actually a string boxed as object, ToString() on it will return content
+                        var t = ilo.ToString();
+                        if (!string.IsNullOrEmpty(t) && !string.Equals(t, nameof(Il2CppSystem.Object), StringComparison.Ordinal)) return t;
+                    }
+                } catch { }
+#endif
+                // Fallback to invariant conversion
+                return Convert.ToString(obj, System.Globalization.CultureInfo.InvariantCulture) ?? obj.ToString();
+            }
+            catch { return obj?.ToString() ?? "null"; }
+        }
+
+        public static void Add(string level, object obj)
+        {
+            string msg = FormatObject(obj);
+            var e = new Entry { ts = DateTime.UtcNow, level = level ?? "info", msg = msg ?? string.Empty };
+            lock(_lock)
+            {
+                _entries.Add(e);
+                if (_entries.Count > MAX)
+                {
+                    int remove = _entries.Count - MAX;
+                    _entries.RemoveRange(0, remove);
+                }
+            }
+        }
+        public static List<Entry> Tail(int n)
+        {
+            lock(_lock)
+            {
+                int count = _entries.Count;
+                int start = Math.Max(0, count - Math.Max(1, n));
+                return _entries.GetRange(start, count - start);
+            }
+        }
+        public static int Count { get { lock(_lock) return _entries.Count; } }
+    }
+
+    // Subscribe to Unity log so we capture fully-rendered strings as a fallback
+    internal static class UnityLogCapture
+    {
+        private static bool _inited;
+        public static void EnsureInit()
+        {
+            if (_inited) return;
+            _inited = true;
+            try { Application.logMessageReceived += OnLog; }
+            catch { _inited = false; }
+        }
+        private static void OnLog(string condition, string stackTrace, LogType type)
+        {
+            string lvl = type == LogType.Error || type == LogType.Exception || type == LogType.Assert ? "error"
+                : (type == LogType.Warning ? "warn" : "info");
+            RuntimeLogBuffer.Add(lvl, condition);
+        }
+    }
+
+    // Hook Game.Log(object print, int level = 2)
+    [HarmonyPatch(typeof(Game), nameof(Game.Log))]
+    internal class Hook_Game_Log
+    {
+        static void Prefix(object print, int level = 2)
+        {
+            string lvl = level >= 3 ? "debug" : "info";
+            RuntimeLogBuffer.Add(lvl, print);
+        }
+    }
+
+    // Hook Game.LogError(object print, int level = 2)
+    [HarmonyPatch(typeof(Game), nameof(Game.LogError))]
+    internal class Hook_Game_LogError
+    {
+        static void Prefix(object print, int level = 2)
+        {
+            RuntimeLogBuffer.Add("error", print);
         }
     }
 }

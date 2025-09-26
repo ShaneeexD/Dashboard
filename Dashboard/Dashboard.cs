@@ -24,6 +24,9 @@ namespace Dashboard
                 // Drain any enqueued main-thread actions so Plugin.RunSync() completes
                 Plugin.Drain();
 
+                // Ensure runtime Unity log capture is initialized (idempotent)
+                UnityLogCapture.EnsureInit();
+
                 if (SessionData.Instance != null)
                 {
                     string timeText = SessionData.Instance.TimeAndDate(SessionData.Instance.gameTime, true, true, true);

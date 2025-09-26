@@ -210,6 +210,47 @@ namespace Dashboard
                 return;
             }
 
+            // Runtime logs captured via Harmony hooks on Game.Log/Game.LogError
+            if (target.StartsWith("/api/runtime-logs", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+                {
+                    WriteSimpleResponse(writer, 405, "Method Not Allowed", "Use GET for this endpoint");
+                    return;
+                }
+                try
+                {
+                    int tail = 500;
+                    string tStr = GetQueryValue(target, "tail");
+                    if (!string.IsNullOrEmpty(tStr) && int.TryParse(tStr, out int tVal)) tail = Math.Max(50, Math.Min(5000, tVal));
+
+                    var items = RuntimeLogBuffer.Tail(tail);
+                    var sb = new StringBuilder();
+                    sb.Append("{\"source\":\"runtime\",\"count\":");
+                    sb.Append(items.Count);
+                    sb.Append(",\"entries\":[");
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        if (i > 0) sb.Append(',');
+                        var e = items[i];
+                        sb.Append('{');
+                        sb.Append("\"ts\":\""); sb.Append(JsonEscape(e.ts.ToString("o", CultureInfo.InvariantCulture))); sb.Append('\"');
+                        sb.Append(',');
+                        sb.Append("\"level\":\""); sb.Append(JsonEscape(e.level ?? "info")); sb.Append('\"');
+                        sb.Append(',');
+                        sb.Append("\"msg\":\""); sb.Append(JsonEscape(e.msg ?? string.Empty)); sb.Append('\"');
+                        sb.Append('}');
+                    }
+                    sb.Append("]}");
+                    WriteJson(writer, 200, sb.ToString());
+                }
+                catch (Exception ex)
+                {
+                    WriteSimpleResponse(writer, 500, "Internal Server Error", ex.Message);
+                }
+                return;
+            }
+
             // Logs: tail Unity/BepInEx logs from common locations
             if (target.StartsWith("/api/logs", StringComparison.OrdinalIgnoreCase))
             {
@@ -240,15 +281,25 @@ namespace Dashboard
                         candidates.Add(Path.Combine(gameRoot, "output_log.txt"));
                         candidates.Add(Path.Combine(gameRoot, "Player.log"));
                     }
+                    // Pick the most recently modified candidate
                     string foundPath = null;
-                    foreach (var pth in candidates)
+                    long size = 0;
+                    DateTime? mtime = null;
+                    try
                     {
-                        try
+                        var existing = candidates
+                            .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p))
+                            .Select(p => new { Path = p, Time = File.GetLastWriteTimeUtc(p), Size = new FileInfo(p).Length })
+                            .OrderByDescending(x => x.Time)
+                            .ToList();
+                        if (existing.Count > 0)
                         {
-                            if (!string.IsNullOrWhiteSpace(pth) && File.Exists(pth)) { foundPath = pth; break; }
+                            foundPath = existing[0].Path;
+                            size = existing[0].Size;
+                            mtime = existing[0].Time;
                         }
-                        catch { /* ignore */ }
                     }
+                    catch { /* ignore */ }
 
                     string content = string.Empty;
                     bool exists = !string.IsNullOrEmpty(foundPath);
@@ -257,7 +308,9 @@ namespace Dashboard
                         try { content = TailFile(foundPath, tail); }
                         catch (Exception ex) { ModLogger.Warn($"/api/logs read error: {ex.Message}"); }
                     }
-                    string json = $"{{\"path\":\"{JsonEscape(foundPath ?? Path.Combine(baseDir, "Player.log"))}\",\"exists\":{(exists ? "true" : "false")},\"content\":\"{JsonEscape(content)}\"}}";
+                    var source = (foundPath != null && foundPath.IndexOf("BepInEx", StringComparison.OrdinalIgnoreCase) >= 0) ? "bepinex" : "unity";
+                    string mtimeStr = mtime.HasValue ? mtime.Value.ToString("o", CultureInfo.InvariantCulture) : "";
+                    string json = $"{{\"path\":\"{JsonEscape(foundPath ?? Path.Combine(baseDir, "Player.log"))}\",\"exists\":{(exists ? "true" : "false")},\"source\":\"{source}\",\"mtime\":\"{mtimeStr}\",\"size\":{size},\"content\":\"{JsonEscape(content)}\"}}";
                     WriteJson(writer, 200, json);
                 }
                 catch (Exception ex)

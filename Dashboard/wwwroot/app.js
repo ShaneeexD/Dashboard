@@ -78,6 +78,7 @@
   let lastNpcJson = '';
   let logsTimer = null;
   let rawLogs = '';
+  let runtimeEntries = null; // array or null when using file tail
 
   // Theme handling
   const THEME_KEY = 'sod_theme'; // 'blue' | 'red' | 'green' | 'yellow' | 'purple' | 'cyan' | 'pink' | 'colorblind' | 'custom'
@@ -582,12 +583,30 @@
     if(!els.logsOutput) return;
     try{
       const tail = Number(els.logsTail?.value || 500) || 500;
-      const res = await fetch(`/api/logs?tail=${tail}`, { cache: 'no-store' });
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      if(els.logsPath) els.logsPath.textContent = data.exists ? data.path : 'Log not found';
-      rawLogs = data.content || '';
-      renderLogs();
+      // Try runtime logs first
+      let usedRuntime = false;
+      try{
+        const rres = await fetch(`/api/runtime-logs?tail=${tail}`, { cache: 'no-store' });
+        if(rres.ok){
+          const rdata = await rres.json();
+          if(Array.isArray(rdata.entries) && rdata.entries.length){
+            runtimeEntries = rdata.entries;
+            if(els.logsPath) els.logsPath.textContent = rdata.source ? `Runtime (${rdata.entries.length})` : `Runtime (${rdata.entries.length})`;
+            renderRuntimeLogs();
+            usedRuntime = true;
+          }
+        }
+      }catch{ /* ignore and fallback */ }
+
+      if(!usedRuntime){
+        runtimeEntries = null;
+        const res = await fetch(`/api/logs?tail=${tail}`, { cache: 'no-store' });
+        if(!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if(els.logsPath) els.logsPath.textContent = data.exists ? data.path : 'Log not found';
+        rawLogs = data.content || '';
+        renderLogs();
+      }
     }catch(err){
       if(els.logsOutput) els.logsOutput.textContent = 'Failed to read logs';
     }
@@ -658,6 +677,32 @@
         + `</div>`);
     }
     els.logsOutput.innerHTML = out.length ? out.join('') : '<div class="log-line"><span class="log-msg">No log lines</span></div>';
+    if(els.logsAutoscroll && els.logsAutoscroll.checked && wasNearBottom){
+      els.logsOutput.scrollTop = els.logsOutput.scrollHeight;
+    }
+  }
+
+  function renderRuntimeLogs(){
+    if(!els.logsOutput) return;
+    const wasNearBottom = (els.logsOutput.scrollHeight - els.logsOutput.scrollTop - els.logsOutput.clientHeight) < 60;
+    const pred = getFilterPredicate();
+    const out = [];
+    const items = Array.isArray(runtimeEntries) ? runtimeEntries : [];
+    for(let i=0;i<items.length;i++){
+      const e = items[i];
+      const ts = e.ts || '';
+      const level = (e.level||'info').toLowerCase();
+      const msg = e.msg || '';
+      const textForFilter = `${ts} ${level} ${msg}`;
+      if(!pred(textForFilter)) continue;
+      const cls = level === 'error' ? 'level-error' : (level.startsWith('warn') ? 'level-warn' : 'level-info');
+      out.push(`<div class=\"log-line ${cls}\">`
+        + `<span class=\"log-level\">${level}</span>`
+        + `<span class=\"log-msg\">${escapeHtml(msg)}</span>`
+        + (ts ? `<span class=\"log-ts\">${escapeHtml(ts)}</span>` : ``)
+        + `</div>`);
+    }
+    els.logsOutput.innerHTML = out.length ? out.join('') : '<div class="log-line"><span class="log-msg">No runtime log lines</span></div>';
     if(els.logsAutoscroll && els.logsAutoscroll.checked && wasNearBottom){
       els.logsOutput.scrollTop = els.logsOutput.scrollHeight;
     }
