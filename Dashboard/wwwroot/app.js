@@ -24,11 +24,13 @@
     npcDetSurname: document.getElementById('npc-det-surname'),
     npcDetHpFill: document.getElementById('npc-det-hpfill'),
     // Player view
+    playerSearch: document.getElementById('player-search'),
     playerPreset: document.getElementById('player-preset'),
     playerSpawn: document.getElementById('player-spawn'),
     playerStatus: document.getElementById('player-status')
   };
   let playerPresetsLoaded = false;
+  let playerPresetMaster = [];
   let npcCache = [];
   let selectedNpcId = null;
 
@@ -96,19 +98,33 @@
           list = Array.isArray(data?.InteractablePreset) ? data.InteractablePreset : [];
         }
       }
-      if(els.playerPreset){
-        els.playerPreset.innerHTML = '';
-        for(const name of list){
-          const opt = document.createElement('option');
-          opt.value = name;
-          opt.textContent = name;
-          els.playerPreset.appendChild(opt);
-        }
-        playerPresetsLoaded = true;
-      }
+      playerPresetMaster = list.slice();
+      renderPlayerPresets();
+      playerPresetsLoaded = true;
       setPlayerStatus(list.length ? 'Presets loaded.' : 'No presets found.', list.length ? 'ok' : 'error');
     }catch(err){
       setPlayerStatus('Failed to load presets.','error');
+    }
+  }
+
+  // Render the presets dropdown filtered by the search query
+  function renderPlayerPresets(){
+    if(!els.playerPreset) return;
+    const q = (els.playerSearch?.value || '').trim().toLowerCase();
+    const filtered = q ? playerPresetMaster.filter(n => n.toLowerCase().includes(q)) : playerPresetMaster;
+    const prev = els.playerPreset.value;
+    els.playerPreset.innerHTML = '';
+    for(const name of filtered){
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      els.playerPreset.appendChild(opt);
+    }
+    // restore previous selection if still present, else first item
+    if(prev && filtered.includes(prev)){
+      els.playerPreset.value = prev;
+    } else if(filtered.length){
+      els.playerPreset.value = filtered[0];
     }
   }
 
@@ -256,6 +272,7 @@
 
   els.npcRefresh?.addEventListener('click', fetchNpcs);
   els.npcSearch?.addEventListener('input', () => renderNpcs());
+  els.playerSearch?.addEventListener('input', () => renderPlayerPresets());
 
   // Player view actions
   els.playerSpawn?.addEventListener('click', spawnSelectedPreset);
