@@ -33,6 +33,7 @@ body{
   width:36px; height:36px; display:grid; place-items:center;
   border-radius:10px; background:linear-gradient(135deg, rgba(109,197,255,0.25), rgba(122,243,197,0.18));
   color:#08121a; box-shadow:var(--shadow); border:1px solid var(--border);
+  position:relative;
 }
 .logo-svg{width:28px; height:28px; display:block}
 .logo-svg .neon{stroke:url(#logo-grad); filter:url(#logo-glow)}
@@ -40,6 +41,17 @@ body{
 .logo-svg .s-stroke{fill:none; stroke-width:2; stroke-linecap:round}
 .logo-svg .d-stroke{fill:none; stroke-width:2; stroke-linecap:round}
 @keyframes dash{to{stroke-dashoffset:-80}}
+
+/* Logo text overlays */
+.logo-letters{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:1px; pointer-events:none; transform:scale(0.95);
+}
+.logo-letters > span{
+  font-weight:800; font-size:10px; line-height:1; letter-spacing:0.1px;
+  background:linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow:0 0 4px rgba(109,197,255,0.35), 0 0 8px rgba(122,243,197,0.18);
+}
 .title{font-weight:700; letter-spacing:0.4px}
 .nav{display:flex; flex-direction:column; gap:6px; margin-top:8px}
 .nav-item{

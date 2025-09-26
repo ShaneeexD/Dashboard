@@ -13,6 +13,8 @@ Desktop.ini
 *.swo
 *.dll
 soMap.json
+notes.md
+dev-server.ps1
 # --- IDE files ---
 .vs/
 .vscode/
