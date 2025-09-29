@@ -90,8 +90,47 @@ namespace Dashboard
                 if (home != null && home.telephones != null && home.telephones.Count > 0)
                 {
                     var tel = home.telephones[0];
-                    return tel != null ? tel.ToString() : string.Empty;
+                    if (tel == null) return string.Empty;
+                    // Try precomputed string
+                    try { if (!string.IsNullOrEmpty(tel.numberString)) return tel.numberString; } catch { }
+                    // Try to load/compute the number string
+                    try { tel.LoadTelephoneNumber(); if (!string.IsNullOrEmpty(tel.numberString)) return tel.numberString; } catch { }
+                    // Fallback to formatting raw number if available
+                    try { if (tel.number > 0) return Toolbox.Instance.GetTelephoneNumberString(tel.number); } catch { }
+                    return string.Empty;
                 }
+            }
+            catch { }
+            return string.Empty;
+        }
+
+        private static string GetBuildingDisplayName(Citizen c)
+        {
+            try
+            {
+                var home = c?.home;
+                if (home == null) return string.Empty;
+                // Prefer specific address name first
+                try { var n = home.thisAsAddress?.name; if (!string.IsNullOrEmpty(n)) return n; } catch { }
+                // Then address preset name
+                try { var n = home.thisAsAddress?.addressPreset?.presetName; if (!string.IsNullOrEmpty(n)) return n; } catch { }
+                // Then building object name
+                try { var n = home.building?.name; if (!string.IsNullOrEmpty(n)) return n; } catch { }
+                // Finally building preset name
+                try { var n = home.building?.preset?.name; if (!string.IsNullOrEmpty(n)) return n; } catch { }
+            }
+            catch { }
+            return string.Empty;
+        }
+
+        private static string GetFloorDisplayName(Citizen c)
+        {
+            try
+            {
+                var f = c?.home?.floor;
+                if (f == null) return string.Empty;
+                try { var n = f.floorName; if (!string.IsNullOrEmpty(n)) return n; } catch { }
+                try { return $"Floor {f.floor}"; } catch { }
             }
             catch { }
             return string.Empty;
@@ -175,10 +214,10 @@ namespace Dashboard
                             facialHair = HasTrait(citizen, "Quirk-FacialHair"),
                             dateOfBirth = SafeToString(() => citizen.birthday.ToString()),
                             telephoneNumber = GetHomeTelephone(citizen),
-                            livesInBuilding = SafeToString(() => citizen.home?.building?.ToString()),
-                            livesOnFloor = SafeToString(() => citizen.home?.floor?.ToString()),
-                            worksInBuilding = SafeToString(() => citizen.job?.employer?.address?.ToString()),
-                            workHours = string.Empty,
+                            livesInBuilding = GetBuildingDisplayName(citizen),
+                            livesOnFloor = GetFloorDisplayName(citizen),
+                            worksInBuilding = string.Empty,
+                            workHours = SafeToString(() => citizen.job?.GetWorkingHoursString()),
                             handwriting = SafeToString(() => citizen.handwriting?.fontAsset?.name)
                         };
                         list.Add(info);

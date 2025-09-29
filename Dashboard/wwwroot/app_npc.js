@@ -37,11 +37,8 @@
     facialhair: document.getElementById('npc-facialhair'),
     dob: document.getElementById('npc-dob'),
     phone: document.getElementById('npc-phone'),
-    // Employment/Residence extra
-    workbuilding: document.getElementById('npc-workbuilding'),
+    // Employment extra
     workhours: document.getElementById('npc-workhours'),
-    livesBuilding: document.getElementById('npc-lives-building'),
-    livesFloor: document.getElementById('npc-lives-floor'),
     // Dev
     devTeleportPlayer: document.getElementById('dev-teleport-player'),
     devTeleportNpc: document.getElementById('dev-teleport-npc'),
@@ -189,12 +186,7 @@
       if (els.phone) els.phone.textContent = n.telephoneNumber || '—';
 
       // Employment extras
-      if (els.workbuilding) els.workbuilding.textContent = n.worksInBuilding || '—';
       if (els.workhours) els.workhours.textContent = n.workHours || '—';
-
-      // Residence extras
-      if (els.livesBuilding) els.livesBuilding.textContent = n.livesInBuilding || '—';
-      if (els.livesFloor) els.livesFloor.textContent = n.livesOnFloor || '—';
     }catch{}
   }
 
