@@ -70,6 +70,12 @@
     pBlFill: document.getElementById('player-bleeding-fill'),
     pBlText: document.getElementById('player-bleeding-text')
   };
+  // Map
+  els.mapRefresh = document.getElementById('map-refresh');
+  els.mapFloor = document.getElementById('map-floor');
+  els.mapLayers = document.getElementById('map-layers');
+  els.mapTree = document.getElementById('map-tree');
+  els.mapActive = document.getElementById('map-active');
   let playerPresetsLoaded = false;
   let playerPresetMaster = [];
   let npcCache = [];
@@ -179,6 +185,21 @@
       applyTheme('custom');
     }
   });
+
+  // Map events
+  els.mapRefresh?.addEventListener('click', () => refreshMap());
+  els.mapFloor?.addEventListener('change', async () => {
+    const ord = Number(els.mapFloor.value);
+    if(Number.isFinite(ord)){
+      try{
+        const res = await fetch(`/api/map/activate?index=${ord}`, { method:'POST', cache:'no-store' });
+        await res.json().catch(()=>({}));
+      }catch{}
+      // Update preview immediately and refresh UI after attempting to activate
+      updateMapImage(ord);
+      refreshMap();
+    }
+  });
   els.customColor?.addEventListener('input', (e)=>{
     const hex = e.target.value;
     localStorage.setItem(THEME_CUSTOM_KEY, hex);
@@ -236,6 +257,9 @@
       startLogsPolling();
     } else {
       stopLogsPolling();
+    }
+    if(name === 'map'){
+      refreshMap();
     }
   }
 
@@ -696,10 +720,10 @@
       const textForFilter = `${ts} ${level} ${msg}`;
       if(!pred(textForFilter)) continue;
       const cls = level === 'error' ? 'level-error' : (level.startsWith('warn') ? 'level-warn' : 'level-info');
-      out.push(`<div class=\"log-line ${cls}\">`
-        + `<span class=\"log-level\">${level}</span>`
-        + `<span class=\"log-msg\">${escapeHtml(msg)}</span>`
-        + (ts ? `<span class=\"log-ts\">${escapeHtml(ts)}</span>` : ``)
+      out.push(`<div class="log-line ${cls}">`
+        + `<span class="log-level">${level}</span>`
+        + `<span class="log-msg">${escapeHtml(msg)}</span>`
+        + (ts ? `<span class="log-ts">${escapeHtml(ts)}</span>` : ``)
         + `</div>`);
     }
     els.logsOutput.innerHTML = out.length ? out.join('') : '<div class="log-line"><span class="log-msg">No runtime log lines</span></div>';
@@ -707,4 +731,112 @@
       els.logsOutput.scrollTop = els.logsOutput.scrollHeight;
     }
   }
+
+  // Map helpers
+  async function refreshMap(){
+    try{
+      const [layers, tree] = await Promise.all([
+        fetchMapLayers(),
+        fetchMapTree()
+      ]);
+      renderMapLayers(layers);
+      renderMapTree(tree);
+      // Update preview image using current active ordinal
+      const ord = Number.isFinite(layers?.activeOrdinal) ? layers.activeOrdinal : -1;
+      updateMapImage(ord);
+    }catch(err){
+      if(els.mapLayers) els.mapLayers.innerHTML = '<div class="placeholder">Failed to load map layers</div>';
+      if(els.mapTree) els.mapTree.textContent = 'Failed to load map tree';
+    }
+  }
+
+  async function fetchMapLayers(){
+    const res = await fetch('/api/map/layers', { cache:'no-store' });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    return await res.json();
+  }
+
+  async function fetchMapTree(){
+    const res = await fetch('/api/map/tree?depth=4', { cache:'no-store' });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    return await res.json();
+  }
+
+  function renderMapLayers(d){
+    if(!els.mapLayers || !d) return;
+    const layers = Array.isArray(d.layers) ? d.layers : [];
+    const activeOrd = Number.isFinite(d.activeOrdinal) ? d.activeOrdinal : -1;
+    if(els.mapActive) els.mapActive.textContent = activeOrd >= 0 ? `Active floor: ${activeOrd}` : 'Active floor: —';
+    // Keep preview in sync when layers render
+    updateMapImage(activeOrd);
+    // Floor selector
+    if(els.mapFloor){
+      const prev = els.mapFloor.value;
+      els.mapFloor.innerHTML = '';
+      for(const l of layers){
+        const opt = document.createElement('option');
+        opt.value = String(l.ordinal);
+        opt.textContent = `Floor ${l.ordinal}`;
+        if(l.ordinal === activeOrd) opt.selected = true;
+        els.mapFloor.appendChild(opt);
+      }
+      if(prev && Array.from(els.mapFloor.options).some(o => o.value === prev)) els.mapFloor.value = prev;
+    }
+    // Layers list
+    const html = layers.map(l => {
+      const act = l.ordinal === activeOrd;
+      return `<div class="list-item ${act ? 'active' : ''}" data-ordinal="${l.ordinal}">`
+        + `<div class="list-title">Floor ${l.ordinal}</div>`
+        + `<div class="list-sub">index ${l.index} • children ${l.childCount} • ${l.activeSelf ? 'enabled' : 'disabled'}</div>`
+        + `</div>`;
+    }).join('');
+    els.mapLayers.innerHTML = html || '<div class="placeholder">No layers found</div>';
+    els.mapLayers.querySelectorAll('.list-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        const ord = Number(item.dataset.ordinal);
+        if(Number.isFinite(ord)){
+          try{ await fetch(`/api/map/activate?index=${ord}`, { method:'POST', cache:'no-store' }); }catch{}
+          // Ensure preview updates immediately
+          updateMapImage(ord);
+          refreshMap();
+        }
+      });
+    });
+  }
+
+  function renderMapTree(d){
+    if(!els.mapTree) return;
+    try{
+      const pretty = JSON.stringify(d, null, 2);
+      els.mapTree.textContent = pretty;
+    }catch{
+      els.mapTree.textContent = 'Failed to render tree';
+    }
+  }
+
+  async function updateMapImage(activeOrd){
+    try{
+      const mapView = document.getElementById('view-map');
+      if(!mapView || !mapView.classList.contains('active')) return;
+      const img = document.getElementById('map-image');
+      if(!img) return;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const w = Math.round(768 * dpr);
+      const h = Math.round(768 * dpr);
+      const ord = Number.isFinite(activeOrd) ? activeOrd : -1;
+      const res = await fetch(`/api/map/capture64?ord=${ord}&w=${w}&h=${h}&mb=1`, { cache:'no-store' });
+      if(res.ok){
+        const data = await res.json().catch(()=>null);
+        if(data && data.ok && data.dataUrl){
+          img.src = data.dataUrl;
+          return;
+        }
+      }
+      // Fallback to direct image URL
+      img.src = `/api/map/capture?ord=${ord}&w=${w}&h=${h}&mb=1&t=${Date.now()}`;
+    }catch{
+      // Ignore preview errors to avoid UI flicker
+    }
+  }
+
 })();

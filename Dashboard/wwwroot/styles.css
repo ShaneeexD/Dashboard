@@ -212,6 +212,18 @@ body{
 .ml-8{margin-left:8px}
 .ml-12{margin-left:12px}
 
+/* Map */
+.map-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start}
+.map-panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%), var(--card); border:1px solid var(--border); border-radius:14px; padding:14px}
+.map-panel .card-title{margin-bottom:8px}
+.list{display:flex; flex-direction:column; gap:8px}
+.list-item{border:1px solid var(--border); border-radius:10px; padding:10px 12px; background:rgba(255,255,255,0.02); cursor:pointer}
+.list-item:hover{background:rgba(255,255,255,0.04)}
+.list-item.active{outline:1px solid var(--accent); background:rgba(0,179,255,0.06)}
+.list-title{font-weight:600}
+.list-sub{font-size:12px; color:var(--muted); margin-top:2px}
+.map-tree{height:50vh}
+
 .view{display:none; padding:24px 28px}
 .view.active{display:block}
 .cards{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:16px}

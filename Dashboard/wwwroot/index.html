@@ -195,7 +195,28 @@
       </section>
 
       <section id="view-map" class="view">
-        <div class="placeholder">An interactive map will be embedded here.</div>
+        <div class="toolbar">
+          <button id="map-refresh" class="btn">Refresh</button>
+          <label class="metric-label ml-12">Floor:
+            <select id="map-floor" class="input ml-6"></select>
+          </label>
+          <div class="spacer"></div>
+          <div id="map-active" class="metric-label">—</div>
+        </div>
+        <div class="map-grid">
+          <div class="map-panel preview">
+            <div class="card-title">Preview</div>
+            <img id="map-image" class="map-image" alt="Minimap preview" />
+          </div>
+          <div class="map-panel">
+            <div class="card-title">Layers</div>
+            <div id="map-layers" class="list"></div>
+          </div>
+          <div class="map-panel">
+            <div class="card-title">Hierarchy</div>
+            <pre id="map-tree" class="console-output map-tree"></pre>
+          </div>
+        </div>
       </section>
 
       <section id="view-stats" class="view">

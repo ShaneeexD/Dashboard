@@ -203,10 +203,249 @@ namespace Dashboard
                 return;
             }
 
+            // Map: capture minimap as base64 data URL
+            if (target.StartsWith("/api/map/capture64", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+                {
+                    WriteSimpleResponse(writer, 405, "Method Not Allowed", "Use GET for this endpoint");
+                    return;
+                }
+                try
+                {
+                    int ord = -1;
+                    int w = 1024, h = 1024;
+                    string oStr = GetQueryValue(target, "ord");
+                    if (!string.IsNullOrEmpty(oStr) && int.TryParse(oStr, out var tmp)) ord = tmp;
+                    if (int.TryParse(GetQueryValue(target, "w"), out var tw)) w = Math.Max(64, Math.Min(4096, tw));
+                    if (int.TryParse(GetQueryValue(target, "h"), out var th)) h = Math.Max(64, Math.Min(4096, th));
+
+                    bool mb = string.Equals(GetQueryValue(target, "mb"), "1", StringComparison.OrdinalIgnoreCase);
+                    byte[] png = Plugin.RunSync(() => MapCapture.Capture(ord, w, h, mb), 8000);
+                    if (png == null || png.Length == 0)
+                    {
+                        WriteJson(writer, 500, "{\"ok\":false,\"message\":\"Failed to capture minimap\"}");
+                    }
+                    else
+                    {
+                        string b64 = Convert.ToBase64String(png);
+                        string json = $"{{\"ok\":true,\"ordinal\":{ord},\"w\":{w},\"h\":{h},\"dataUrl\":\"data:image/png;base64,{b64}\"}}";
+                        WriteJson(writer, 200, json);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteSimpleResponse(writer, 500, "Internal Server Error", ex.Message);
+                }
+                return;
+            }
+
+            // Map: capture minimap as PNG, even if UI is closed (uses an offscreen clone)
+            if (target.StartsWith("/api/map/capture", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+                {
+                    WriteSimpleResponse(writer, 405, "Method Not Allowed", "Use GET for this endpoint");
+                    return;
+                }
+                try
+                {
+                    int ord = -1;
+                    int w = 1024, h = 1024;
+                    string oStr = GetQueryValue(target, "ord");
+                    if (!string.IsNullOrEmpty(oStr)) int.TryParse(oStr, out ord);
+                    string wStr = GetQueryValue(target, "w");
+                    string hStr = GetQueryValue(target, "h");
+                    if (!string.IsNullOrEmpty(wStr) && int.TryParse(wStr, out var wv)) w = Math.Max(64, Math.Min(4096, wv));
+                    if (!string.IsNullOrEmpty(hStr) && int.TryParse(hStr, out var hv)) h = Math.Max(64, Math.Min(4096, hv));
+
+                    bool mb = string.Equals(GetQueryValue(target, "mb"), "1", StringComparison.OrdinalIgnoreCase);
+                    byte[] png = Plugin.RunSync(() => MapCapture.Capture(ord, w, h, mb), 8000);
+                    if (png == null || png.Length == 0)
+                    {
+                        WriteSimpleResponse(writer, 500, "Internal Server Error", "Failed to capture minimap");
+                    }
+                    else
+                    {
+                        WriteBinaryResponse(writer, "image/png", png);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteSimpleResponse(writer, 500, "Internal Server Error", ex.Message);
+                }
+                return;
+            }
+
+            // Map: activate a specific MapLayer by index
+            if (target.StartsWith("/api/map/activate", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(method, "POST", StringComparison.OrdinalIgnoreCase))
+                {
+                    WriteSimpleResponse(writer, 405, "Method Not Allowed", "Use POST for this endpoint");
+                    return;
+                }
+                try
+                {
+                    int index = -1;
+                    string iStr = GetQueryValue(target, "index");
+                    if (!string.IsNullOrEmpty(iStr)) int.TryParse(iStr, out index);
+                    var result = Plugin.RunSync(() =>
+                    {
+                        Transform content = null;
+                        try { content = FindMinimapContent(); } catch { }
+                        if (content == null) return (ok:false, json:"{\"ok\":false,\"message\":\"Minimap Content not found\"}");
+
+                        int activeIdx = -1;
+                        int count = content.childCount;
+                        int mapLayerOrdinal = 0;
+                        for (int i = 0; i < count; i++)
+                        {
+                            var ch = content.GetChild(i);
+                            if (ch == null) continue;
+                            if (!ch.name.StartsWith("MapLayer", StringComparison.OrdinalIgnoreCase)) continue;
+                            bool makeActive = (mapLayerOrdinal == index);
+                            ch.gameObject.SetActive(makeActive);
+                            if (makeActive) activeIdx = mapLayerOrdinal;
+                            mapLayerOrdinal++;
+                        }
+                        var jsonSb = new StringBuilder();
+                        jsonSb.Append("{\"ok\":true,\"activeIndex\":").Append(activeIdx).Append('}');
+                        return (ok:true, json:jsonSb.ToString());
+                    }, 8000);
+                    WriteJson(writer, result.ok ? 200 : 500, result.json);
+                }
+                catch (Exception ex)
+                {
+                    WriteSimpleResponse(writer, 500, "Internal Server Error", ex.Message);
+                }
+                return;
+            }
+
             if (target.Equals("/api/info", StringComparison.OrdinalIgnoreCase))
             {
                 string json = "{\"name\":\"Shadows of Doubt Dashboard\",\"version\":\"1.0.0\"}";
                 WriteJson(writer, 200, json);
+                return;
+            }
+
+            // Map: list layers (MapLayer clones) and current active
+            if (target.StartsWith("/api/map/layers", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+                {
+                    WriteSimpleResponse(writer, 405, "Method Not Allowed", "Use GET for this endpoint");
+                    return;
+                }
+                try
+                {
+                    var result = Plugin.RunSync(() =>
+                    {
+                        Transform content = null;
+                        try { content = FindMinimapContent(); } catch { }
+
+                        var sb = new StringBuilder();
+                        sb.Append('{');
+                        if (content == null)
+                        {
+                            sb.Append("\"ok\":false,\"message\":\"Minimap Content not found\"}");
+                            return sb.ToString();
+                        }
+
+                        sb.Append("\"ok\":true,\"layers\":[");
+                        int activeOrdinal = -1;
+                        bool first = true;
+                        int count = content.childCount;
+                        int ordinal = 0;
+                        for (int i = 0; i < count; i++)
+                        {
+                            var ch = content.GetChild(i);
+                            if (ch == null) continue;
+                            if (!ch.name.StartsWith("MapLayer", StringComparison.OrdinalIgnoreCase)) continue;
+                            if (!first) sb.Append(',');
+                            first = false;
+                            bool act = ch.gameObject.activeSelf;
+                            if (act) activeOrdinal = ordinal;
+                            sb.Append('{')
+                              .Append("\"index\":").Append(i).Append(',')
+                              .Append("\"ordinal\":").Append(ordinal).Append(',')
+                              .Append("\"name\":\"").Append(JsonEscape(ch.name)).Append('\"').Append(',')
+                              .Append("\"activeSelf\":").Append(act ? "true" : "false").Append(',')
+                              .Append("\"activeInHierarchy\":").Append(ch.gameObject.activeInHierarchy ? "true" : "false").Append(',')
+                              .Append("\"childCount\":").Append(ch.childCount)
+                              .Append('}');
+                            ordinal++;
+                        }
+                        sb.Append("],\"activeOrdinal\":").Append(activeOrdinal).Append('}');
+                        return sb.ToString();
+                    }, 5000);
+                    WriteJson(writer, 200, result);
+                }
+                catch (Exception ex)
+                {
+                    WriteSimpleResponse(writer, 500, "Internal Server Error", ex.Message);
+                }
+                return;
+            }
+
+            // Map: return a shallow tree of the Content hierarchy (limited depth)
+            if (target.StartsWith("/api/map/tree", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+                {
+                    WriteSimpleResponse(writer, 405, "Method Not Allowed", "Use GET for this endpoint");
+                    return;
+                }
+                try
+                {
+                    int maxDepth = 3;
+                    string dStr = GetQueryValue(target, "depth");
+                    if (!string.IsNullOrEmpty(dStr) && int.TryParse(dStr, out int dVal)) maxDepth = Math.Max(1, Math.Min(6, dVal));
+
+                    var result = Plugin.RunSync(() =>
+                    {
+                        Transform content = null;
+                        try { content = FindMinimapContent(); } catch { }
+
+                        var sb = new StringBuilder();
+                        if (content == null) return "{\"ok\":false,\"message\":\"Minimap Content not found\"}";
+
+                        string SerializeNode(Transform t, int depth)
+                        {
+                            var nsb = new StringBuilder();
+                            nsb.Append('{');
+                            nsb.Append("\"name\":\"").Append(JsonEscape(t.name)).Append('\"');
+                            nsb.Append(',').Append("\"activeSelf\":").Append(t.gameObject.activeSelf ? "true" : "false");
+                            nsb.Append(',').Append("\"activeInHierarchy\":").Append(t.gameObject.activeInHierarchy ? "true" : "false");
+                            nsb.Append(',').Append("\"childCount\":").Append(t.childCount);
+                            if (depth < maxDepth && t.childCount > 0)
+                            {
+                                nsb.Append(',').Append("\"children\":[");
+                                bool firstC = true;
+                                for (int i = 0; i < t.childCount; i++)
+                                {
+                                    var c = t.GetChild(i);
+                                    if (!firstC) nsb.Append(',');
+                                    firstC = false;
+                                    nsb.Append(SerializeNode(c, depth + 1));
+                                }
+                                nsb.Append(']');
+                            }
+                            nsb.Append('}');
+                            return nsb.ToString();
+                        }
+
+                        sb.Append('{');
+                        sb.Append("\"ok\":true,\"root\":").Append(SerializeNode(content, 0));
+                        sb.Append('}');
+                        return sb.ToString();
+                    }, 8000);
+                    WriteJson(writer, 200, result);
+                }
+                catch (Exception ex)
+                {
+                    WriteSimpleResponse(writer, 500, "Internal Server Error", ex.Message);
+                }
                 return;
             }
 
@@ -356,7 +595,41 @@ namespace Dashboard
                 {
                     if (!first) sb.Append(",\n");
                     first = false;
-                    sb.Append($"{{\"id\":{npc.id},\"name\":\"{JsonEscape(npc.name)}\",\"surname\":\"{JsonEscape(npc.surname)}\",\"photo\":\"{npc.photoBase64 ?? string.Empty}\",\"hpCurrent\":{npc.hpCurrent.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"hpMax\":{npc.hpMax.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"isDead\":{(npc.isDead ? "true" : "false")},\"isKo\":{(npc.isKo ? "true" : "false")},\"koRemainingSeconds\":{npc.koRemainingSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"koTotalSeconds\":{npc.koTotalSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"employer\":\"{JsonEscape(npc.employer)}\",\"jobTitle\":\"{JsonEscape(npc.jobTitle)}\",\"salary\":\"{JsonEscape(npc.salary)}\",\"homeAddress\":\"{JsonEscape(npc.homeAddress)}\" }}");
+                    sb.Append('{');
+                    sb.Append("\"id\":").Append(npc.id).Append(',');
+                    sb.Append("\"name\":\"").Append(JsonEscape(npc.name)).Append("\",");
+                    sb.Append("\"surname\":\"").Append(JsonEscape(npc.surname)).Append("\",");
+                    sb.Append("\"photo\":\"").Append(npc.photoBase64 ?? string.Empty).Append("\",");
+                    sb.Append("\"hpCurrent\":").Append(npc.hpCurrent.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',');
+                    sb.Append("\"hpMax\":").Append(npc.hpMax.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',');
+                    sb.Append("\"isDead\":").Append(npc.isDead ? "true" : "false").Append(',');
+                    sb.Append("\"isKo\":").Append(npc.isKo ? "true" : "false").Append(',');
+                    sb.Append("\"koRemainingSeconds\":").Append(npc.koRemainingSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',');
+                    sb.Append("\"koTotalSeconds\":").Append(npc.koTotalSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',');
+                    sb.Append("\"employer\":\"").Append(JsonEscape(npc.employer)).Append("\",");
+                    sb.Append("\"jobTitle\":\"").Append(JsonEscape(npc.jobTitle)).Append("\",");
+                    sb.Append("\"salary\":\"").Append(JsonEscape(npc.salary)).Append("\",");
+                    sb.Append("\"homeAddress\":\"").Append(JsonEscape(npc.homeAddress)).Append("\",");
+                    // Additional profile fields
+                    sb.Append("\"ageYears\":").Append(npc.ageYears).Append(',');
+                    sb.Append("\"ageGroup\":\"").Append(JsonEscape(npc.ageGroup)).Append("\",");
+                    sb.Append("\"gender\":\"").Append(JsonEscape(npc.gender)).Append("\",");
+                    sb.Append("\"heightCm\":").Append(npc.heightCm).Append(',');
+                    sb.Append("\"heightCategory\":\"").Append(JsonEscape(npc.heightCategory)).Append("\",");
+                    sb.Append("\"build\":\"").Append(JsonEscape(npc.build)).Append("\",");
+                    sb.Append("\"hairType\":\"").Append(JsonEscape(npc.hairType)).Append("\",");
+                    sb.Append("\"hairColor\":\"").Append(JsonEscape(npc.hairColor)).Append("\",");
+                    sb.Append("\"eyes\":\"").Append(JsonEscape(npc.eyes)).Append("\",");
+                    sb.Append("\"shoeSize\":").Append(npc.shoeSize).Append(',');
+                    sb.Append("\"glasses\":").Append(npc.glasses ? "true" : "false").Append(',');
+                    sb.Append("\"facialHair\":").Append(npc.facialHair ? "true" : "false").Append(',');
+                    sb.Append("\"dateOfBirth\":\"").Append(JsonEscape(npc.dateOfBirth)).Append("\",");
+                    sb.Append("\"telephoneNumber\":\"").Append(JsonEscape(npc.telephoneNumber)).Append("\",");
+                    sb.Append("\"livesInBuilding\":\"").Append(JsonEscape(npc.livesInBuilding)).Append("\",");
+                    sb.Append("\"livesOnFloor\":\"").Append(JsonEscape(npc.livesOnFloor)).Append("\",");
+                    sb.Append("\"worksInBuilding\":\"").Append(JsonEscape(npc.worksInBuilding)).Append("\",");
+                    sb.Append("\"workHours\":\"").Append(JsonEscape(npc.workHours)).Append("\"");
+                    sb.Append('}');
                 }
                 sb.Append("]");
                 WriteJson(writer, 200, sb.ToString());
@@ -880,6 +1153,549 @@ namespace Dashboard
         {
             if (string.IsNullOrEmpty(s)) return string.Empty;
             return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
+        }
+
+        private static Transform FindChildByPath(Transform root, string path)
+        {
+            if (root == null || string.IsNullOrEmpty(path)) return null;
+            var parts = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            Transform cur = root;
+            for (int i = 0; i < parts.Length; i++)
+            {
+                cur = cur.Find(parts[i]);
+                if (cur == null) return null;
+            }
+            return cur;
+        }
+
+        private static Transform FindMinimapContent()
+        {
+            try
+            {
+                // Resolve from active GameCanvas root so we can find inactive children via Transform.Find
+                var root = GameObject.Find("GameCanvas");
+                if (root != null)
+                {
+                    var t = FindChildByPath(root.transform, "MinimapCanvas/Minimap/Scroll View/Viewport/Content");
+                    if (t != null) return t;
+                }
+                // Fallbacks that only work if these are active
+                var go = GameObject.Find("GameCanvas/MinimapCanvas/Minimap/Scroll View/Viewport/Content");
+                if (go != null) return go.transform;
+                var mini = GameObject.Find("GameCanvas/MinimapCanvas/Minimap");
+                if (mini != null)
+                {
+                    var t2 = FindChildByPath(mini.transform, "Scroll View/Viewport/Content");
+                    if (t2 != null) return t2;
+                }
+                var mini2 = GameObject.Find("Minimap");
+                if (mini2 != null)
+                {
+                    var t3 = FindChildByPath(mini2.transform, "Scroll View/Viewport/Content");
+                    if (t3 != null) return t3;
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        // Helper to render the Unity minimap to a PNG via an offscreen clone/camera
+        private static class MapCapture
+        {
+            private static GameObject _cloneRoot;
+            private static Camera _cam;
+            private static RenderTexture _rt;
+            private static int _w, _h;
+            private const int LAYER = 30; // isolated layer for capture
+
+            public static byte[] Capture(int ordinal, int width, int height, bool includeBuildings = true)
+            {
+                try
+                {
+                    if (!EnsureSetup(width, height)) return null;
+                    // Pick floor layer
+                    var content = _cloneRoot.transform.Find("Scroll View/Viewport/Content");
+                    if (content != null)
+                    {
+                        int mapOrd = 0;
+                        for (int i = 0; i < content.childCount; i++)
+                        {
+                            var ch = content.GetChild(i);
+                            if (ch == null) continue;
+                            if (!ch.name.StartsWith("MapLayer", StringComparison.OrdinalIgnoreCase)) continue;
+                            bool active = (ordinal < 0 ? ch.gameObject.activeSelf : mapOrd == ordinal);
+                            ch.gameObject.SetActive(active);
+                            if (active)
+                            {
+                                // Ensure buildings/background are visible
+                                var bg = ch.Find("Background");
+                                if (bg != null) {
+                                    bg.gameObject.SetActive(true);
+                                    if (includeBuildings) { try { EnsureBackgroundButtonsVisible(bg); } catch { /* best-effort */ } }
+                                }
+                                // Force-enable all UI graphics under the active layer (covers Base overlays too)
+                                try { EnsureAllGraphicsVisible(ch); } catch { }
+
+                                // If we intend to include buildings but detect no building visuals in the clone, try capturing from the original
+                                if (includeBuildings)
+                                {
+                                    try
+                                    {
+                                        if (!HasAnyBuildingVisuals(bg))
+                                        {
+                                            var fallback = CaptureFromOriginal(ordinal, width, height, includeBuildings);
+                                            if (fallback != null && fallback.Length > 0) return fallback;
+                                        }
+                                    }
+                                    catch { /* ignore and proceed with clone */ }
+                                }
+                            }
+                            mapOrd++;
+                        }
+                    }
+
+                    // Center the ScrollRect around the middle of the content so buildings are in view
+                    try
+                    {
+                        var sr = _cloneRoot.GetComponentInChildren<UnityEngine.UI.ScrollRect>(true);
+                        if (sr != null)
+                        {
+                            sr.StopMovement();
+                            sr.horizontalNormalizedPosition = 0.5f;
+                            sr.verticalNormalizedPosition = 0.5f;
+                            // Disable inertia so it stays centered during capture
+                            sr.inertia = false;
+                        }
+                    }
+                    catch { }
+
+                    var prev = RenderTexture.active;
+                    _cam.targetTexture = _rt;
+                    RenderTexture.active = _rt;
+                    // Ensure layout/graphics updated before render
+                    Canvas.ForceUpdateCanvases();
+                    GL.Clear(true, true, new Color(0f,0f,0f,0f));
+                    _cam.Render();
+                    var tex = new Texture2D(_w, _h, TextureFormat.RGBA32, false);
+                    tex.ReadPixels(new Rect(0, 0, _w, _h), 0, 0);
+                    tex.Apply();
+                    var png = tex.EncodeToPNG();
+                    UnityEngine.Object.Destroy(tex);
+                    RenderTexture.active = prev;
+                    return png;
+                }
+                catch { return null; }
+            }
+
+            private static bool EnsureSetup(int width, int height)
+            {
+                if (_cloneRoot == null || _cam == null || _rt == null || _w != width || _h != height)
+                {
+                    Cleanup();
+                    var src = FindMinimapRoot();
+                    if (src == null) return false;
+                    _cloneRoot = UnityEngine.Object.Instantiate(src);
+                    _cloneRoot.name = "DashboardMapClone";
+                    UnityEngine.Object.DontDestroyOnLoad(_cloneRoot);
+                    SetLayerRecursive(_cloneRoot, LAYER);
+
+                    var canvas = _cloneRoot.GetComponentInParent<Canvas>();
+                    if (canvas == null) canvas = _cloneRoot.AddComponent<Canvas>();
+                    canvas.renderMode = RenderMode.ScreenSpaceCamera;
+                    canvas.pixelPerfect = true;
+                    canvas.overrideSorting = true;
+                    canvas.sortingOrder = short.MaxValue; // ensure on top
+                    try
+                    {
+                        canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.TexCoord1 | AdditionalCanvasShaderChannels.TexCoord2 | AdditionalCanvasShaderChannels.Normal | AdditionalCanvasShaderChannels.Tangent;
+                    }
+                    catch { }
+
+                    var camGO = new GameObject("DashboardMapCaptureCam");
+                    UnityEngine.Object.DontDestroyOnLoad(camGO);
+                    _cam = camGO.AddComponent<Camera>();
+                    _cam.orthographic = true; // UI render
+                    // Some environments flag clearFlags/backgroundColor as read-only; skip them safely
+                    // Default camera state is fine for UI capture with transparent RT
+                    _cam.cullingMask = (1 << LAYER);
+                    _cam.allowHDR = false;
+                    _cam.allowMSAA = false;
+
+                    _w = width; _h = height;
+                    _rt = new RenderTexture(_w, _h, 24, RenderTextureFormat.ARGB32);
+                    _rt.Create();
+                    _cam.targetTexture = _rt;
+                    canvas.worldCamera = _cam;
+
+                    // Scale UI to target resolution to reduce surprises
+                    try
+                    {
+                        var scaler = _cloneRoot.GetComponentInParent<UnityEngine.UI.CanvasScaler>();
+                        if (scaler == null) scaler = _cloneRoot.AddComponent<UnityEngine.UI.CanvasScaler>();
+                        scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                        scaler.referenceResolution = new Vector2(_w, _h);
+                        scaler.matchWidthOrHeight = 0.5f;
+                    }
+                    catch { }
+
+                    _cloneRoot.SetActive(true);
+                    Canvas.ForceUpdateCanvases();
+                }
+                return _cloneRoot != null && _cam != null && _rt != null;
+            }
+
+            private static GameObject FindMinimapRoot()
+            {
+                // Resolve from active GameCanvas, which should exist; Transform.Find can see inactive children
+                var root = GameObject.Find("GameCanvas");
+                if (root != null)
+                {
+                    var t = FindChildByPath(root.transform, "MinimapCanvas/Minimap");
+                    if (t != null) return t.gameObject;
+                }
+                // Fallbacks if active
+                var go = GameObject.Find("GameCanvas/MinimapCanvas/Minimap");
+                if (go == null) go = GameObject.Find("Minimap");
+                return go;
+            }
+
+            private static void SetLayerRecursive(GameObject go, int layer)
+            {
+                if (go == null) return;
+                go.layer = layer;
+                var tr = go.transform;
+                for (int i = 0; i < tr.childCount; i++)
+                {
+                    SetLayerRecursive(tr.GetChild(i).gameObject, layer);
+                }
+            }
+
+            private static void EnsureBackgroundButtonsVisible(Transform bg)
+            {
+                if (bg == null) return;
+                var stack = new System.Collections.Generic.Stack<Transform>();
+                stack.Push(bg);
+                while (stack.Count > 0)
+                {
+                    var t = stack.Pop();
+                    // Explicitly enable MapButtonComponent clones (buildings)
+                    if (t.name.StartsWith("MapButtonComponent", StringComparison.OrdinalIgnoreCase))
+                    {
+                        t.gameObject.SetActive(true);
+                        // If there is a CanvasGroup, make sure it's visible for capture
+                        var cg = t.GetComponent<CanvasGroup>();
+                        if (cg != null)
+                        {
+                            cg.alpha = 1f;
+                            cg.interactable = false;
+                            cg.blocksRaycasts = false;
+                        }
+                        // Ensure known child visuals are on
+                        var c0 = t.Find("Layer0"); if (c0 != null) c0.gameObject.SetActive(true);
+                        var c1 = t.Find("Layer1"); if (c1 != null) c1.gameObject.SetActive(true);
+                        var gi = t.Find("GeneratedImage"); if (gi != null) gi.gameObject.SetActive(true);
+                        var ti = t.Find("TypeIcon"); if (ti != null) ti.gameObject.SetActive(true);
+                        // Enable UI Graphics if they were disabled
+                        foreach (var g in t.GetComponentsInChildren<UnityEngine.UI.Graphic>(true))
+                        {
+                            if (g == null) continue;
+                            g.enabled = true;
+                            // Max out alpha just in case
+                            try { var col = g.color; col.a = 1f; g.color = col; } catch { }
+                            g.raycastTarget = false;
+                            try { g.canvasRenderer.SetAlpha(1f); } catch { }
+                        }
+                        // Disable culling on CanvasRenderers so they always draw
+                        foreach (var cr in t.GetComponentsInChildren<CanvasRenderer>(true))
+                        {
+                            if (cr == null) continue;
+                            cr.cull = false;
+                            try { cr.SetAlpha(1f); } catch { }
+                        }
+                    }
+                    for (int i = 0; i < t.childCount; i++) stack.Push(t.GetChild(i));
+                }
+            }
+
+            private static void EnsureAllGraphicsVisible(Transform root)
+            {
+                if (root == null) return;
+                // CanvasGroups
+                foreach (var cg in root.GetComponentsInChildren<CanvasGroup>(true))
+                {
+                    if (cg == null) continue;
+                    cg.alpha = 1f;
+                    cg.interactable = false;
+                    cg.blocksRaycasts = false;
+                }
+                // UI Graphics
+                foreach (var g in root.GetComponentsInChildren<UnityEngine.UI.Graphic>(true))
+                {
+                    if (g == null) continue;
+                    g.enabled = true;
+                    try { var c = g.color; c.a = 1f; g.color = c; } catch { }
+                    g.raycastTarget = false;
+                    try { g.canvasRenderer.SetAlpha(1f); } catch { }
+                }
+                // CanvasRenderer culling
+                foreach (var cr in root.GetComponentsInChildren<CanvasRenderer>(true))
+                {
+                    if (cr == null) continue;
+                    cr.cull = false;
+                    try { cr.SetAlpha(1f); } catch { }
+                }
+                // Rebuild layouts to ensure geometry updates
+                try
+                {
+                    var rt = root as RectTransform ?? root.GetComponent<RectTransform>();
+                    if (rt != null) UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+                }
+                catch { }
+            }
+
+            // Detect if any building visuals (Images/RawImages) exist under Background/MapButtonComponent
+            private static bool HasAnyBuildingVisuals(Transform background)
+            {
+                if (background == null) return false;
+                bool found = false;
+                foreach (Transform t in background)
+                {
+                    if (!t.name.StartsWith("MapButtonComponent", StringComparison.OrdinalIgnoreCase)) continue;
+                    foreach (var img in t.GetComponentsInChildren<UnityEngine.UI.Image>(true))
+                    {
+                        if (img == null) continue;
+                        if (img.sprite != null && img.color.a > 0.01f) { found = true; break; }
+                    }
+                    if (found) break;
+                    foreach (var ri in t.GetComponentsInChildren<UnityEngine.UI.RawImage>(true))
+                    {
+                        if (ri == null) continue;
+                        if (ri.texture != null && ri.color.a > 0.01f) { found = true; break; }
+                    }
+                    if (found) break;
+                }
+                return found;
+            }
+
+            private class CanvasState
+            {
+                public Canvas c;
+                public RenderMode renderMode;
+                public Camera worldCam;
+                public int sortingOrder;
+                public bool overrideSorting;
+                public AdditionalCanvasShaderChannels addChannels;
+            }
+
+            private class ScrollRectState
+            {
+                public UnityEngine.UI.ScrollRect sr;
+                public float h;
+                public float v;
+                public bool inertia;
+            }
+
+            private static byte[] CaptureFromOriginal(int ordinal, int width, int height, bool includeBuildings)
+            {
+                GameObject src = null;
+                var saved = new System.Collections.Generic.List<(GameObject go, bool active, int layer)>();
+                var savedCanvases = new System.Collections.Generic.List<CanvasState>();
+                var savedScroll = new System.Collections.Generic.List<ScrollRectState>();
+                var savedParents = new System.Collections.Generic.List<(GameObject go, bool active)>();
+                try
+                {
+                    src = FindMinimapRoot();
+                    if (src == null) return null;
+
+                    // Ensure camera/rt exist
+                    if (_cam == null || _rt == null) { if (!EnsureSetup(width, height)) return null; }
+
+                    // Snapshot state
+                    void Walk(Transform t)
+                    {
+                        saved.Add((t.gameObject, t.gameObject.activeSelf, t.gameObject.layer));
+                        for (int i = 0; i < t.childCount; i++) Walk(t.GetChild(i));
+                    }
+                    Walk(src.transform);
+
+                    // Save and activate parents up to root so src becomes active in hierarchy
+                    var p = src.transform.parent;
+                    while (p != null)
+                    {
+                        savedParents.Add((p.gameObject, p.gameObject.activeSelf));
+                        p.gameObject.SetActive(true);
+                        p = p.parent;
+                    }
+
+                    foreach (var c in src.GetComponentsInChildren<Canvas>(true))
+                    {
+                        savedCanvases.Add(new CanvasState
+                        {
+                            c = c,
+                            renderMode = c.renderMode,
+                            worldCam = c.worldCamera,
+                            sortingOrder = c.sortingOrder,
+                            overrideSorting = c.overrideSorting,
+                            addChannels = c.additionalShaderChannels
+                        });
+                    }
+                    // Also include ancestor canvases (e.g., MinimapCanvas)
+                    foreach (var c in src.GetComponentsInParent<Canvas>(true))
+                    {
+                        if (savedCanvases.Any(s => s.c == c)) continue;
+                        savedCanvases.Add(new CanvasState
+                        {
+                            c = c,
+                            renderMode = c.renderMode,
+                            worldCam = c.worldCamera,
+                            sortingOrder = c.sortingOrder,
+                            overrideSorting = c.overrideSorting,
+                            addChannels = c.additionalShaderChannels
+                        });
+                    }
+                    foreach (var sr in src.GetComponentsInChildren<UnityEngine.UI.ScrollRect>(true))
+                    {
+                        savedScroll.Add(new ScrollRectState
+                        {
+                            sr = sr,
+                            h = sr.horizontalNormalizedPosition,
+                            v = sr.verticalNormalizedPosition,
+                            inertia = sr.inertia
+                        });
+                    }
+
+                    // Prepare for capture
+                    src.SetActive(true);
+                    SetLayerRecursive(src, LAYER);
+                    foreach (var s in savedCanvases)
+                    {
+                        s.c.renderMode = RenderMode.ScreenSpaceCamera;
+                        s.c.worldCamera = _cam;
+                        s.c.overrideSorting = true;
+                        s.c.sortingOrder = short.MaxValue;
+                        try { s.c.additionalShaderChannels = AdditionalCanvasShaderChannels.TexCoord1 | AdditionalCanvasShaderChannels.TexCoord2 | AdditionalCanvasShaderChannels.Normal | AdditionalCanvasShaderChannels.Tangent; } catch { }
+                    }
+
+                    // Activate desired floor and ensure visuals
+                    var content = src.transform.Find("Scroll View/Viewport/Content");
+                    if (content == null)
+                    {
+                        // Try alternate from GameCanvas root
+                        var root = GameObject.Find("GameCanvas");
+                        if (root != null) content = FindChildByPath(root.transform, "MinimapCanvas/Minimap/Scroll View/Viewport/Content");
+                    }
+                    if (content != null)
+                    {
+                        int mapOrd = 0;
+                        for (int i = 0; i < content.childCount; i++)
+                        {
+                            var ch = content.GetChild(i);
+                            if (!ch.name.StartsWith("MapLayer", StringComparison.OrdinalIgnoreCase)) continue;
+                            bool makeActive = (ordinal < 0 ? ch.gameObject.activeSelf : mapOrd == ordinal);
+                            ch.gameObject.SetActive(makeActive);
+                            if (makeActive)
+                            {
+                                var bg = ch.Find("Background");
+                                if (bg != null)
+                                {
+                                    bg.gameObject.SetActive(true);
+                                    if (includeBuildings) { try { EnsureBackgroundButtonsVisible(bg); } catch { } }
+                                }
+                                try { EnsureAllGraphicsVisible(ch); } catch { }
+                            }
+                            mapOrd++;
+                        }
+                    }
+
+                    foreach (var s in savedScroll)
+                    {
+                        if (s?.sr == null) continue;
+                        s.sr.StopMovement();
+                        s.sr.horizontalNormalizedPosition = 0.5f;
+                        s.sr.verticalNormalizedPosition = 0.5f;
+                        s.sr.inertia = false;
+                    }
+
+                    Canvas.ForceUpdateCanvases();
+
+                    var prev = RenderTexture.active;
+                    _cam.targetTexture = _rt;
+                    RenderTexture.active = _rt;
+                    GL.Clear(true, true, new Color(0f, 0f, 0f, 0f));
+                    _cam.Render();
+                    var tex = new Texture2D(_w, _h, TextureFormat.RGBA32, false);
+                    tex.ReadPixels(new Rect(0, 0, _w, _h), 0, 0);
+                    tex.Apply();
+                    var png = tex.EncodeToPNG();
+                    UnityEngine.Object.Destroy(tex);
+                    RenderTexture.active = prev;
+                    return png;
+                }
+                catch { return null; }
+                finally
+                {
+                    // Restore canvases
+                    try
+                    {
+                        foreach (var s in savedCanvases)
+                        {
+                            if (s?.c == null) continue;
+                            s.c.renderMode = s.renderMode;
+                            s.c.worldCamera = s.worldCam;
+                            s.c.sortingOrder = s.sortingOrder;
+                            s.c.overrideSorting = s.overrideSorting;
+                            try { s.c.additionalShaderChannels = s.addChannels; } catch { }
+                        }
+                    }
+                    catch { }
+                    // Restore ScrollRects
+                    try
+                    {
+                        foreach (var s in savedScroll)
+                        {
+                            if (s?.sr == null) continue;
+                            s.sr.StopMovement();
+                            s.sr.horizontalNormalizedPosition = s.h;
+                            s.sr.verticalNormalizedPosition = s.v;
+                            s.sr.inertia = s.inertia;
+                        }
+                    }
+                    catch { }
+                    // Restore active/layers
+                    try
+                    {
+                        for (int i = 0; i < saved.Count; i++)
+                        {
+                            var e = saved[i];
+                            if (e.go == null) continue;
+                            e.go.layer = e.layer;
+                            if (e.go.activeSelf != e.active) e.go.SetActive(e.active);
+                        }
+                    }
+                    catch { }
+                    // Restore parents' active state
+                    try
+                    {
+                        foreach (var sp in savedParents)
+                        {
+                            if (sp.go == null) continue;
+                            if (sp.go.activeSelf != sp.active) sp.go.SetActive(sp.active);
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            private static void Cleanup()
+            {
+                try
+                {
+                    if (_rt != null) { _rt.Release(); UnityEngine.Object.Destroy(_rt); _rt = null; }
+                    if (_cam != null) { UnityEngine.Object.Destroy(_cam.gameObject); _cam = null; }
+                    if (_cloneRoot != null) { UnityEngine.Object.Destroy(_cloneRoot); _cloneRoot = null; }
+                }
+                catch { }
+            }
         }
 
         private static string TailFile(string filePath, int maxLines)

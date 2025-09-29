@@ -24,6 +24,77 @@ namespace Dashboard
             public string jobTitle;
             public string salary;
             public string homeAddress;
+            // Additional profile fields
+            public int ageYears;
+            public string ageGroup;
+            public string gender;
+            public int heightCm;
+            public string heightCategory;
+            public string build;
+            public string hairType;
+            public string hairColor;
+            public string eyes;
+            public int shoeSize;
+            public bool glasses;
+            public bool facialHair;
+            public string dateOfBirth;
+            public string telephoneNumber;
+            public string livesInBuilding;
+            public string livesOnFloor;
+            public string worksInBuilding;
+            public string workHours;
+            public string handwriting;
+        }
+
+        // Helpers
+        private static string SafeToString(Func<string> getter)
+        {
+            try { var s = getter(); return s ?? string.Empty; } catch { return string.Empty; }
+        }
+
+        private static int SafeRound(Func<float> getter)
+        {
+            try { return Mathf.RoundToInt(getter()); } catch { return 0; }
+        }
+
+        private static T SafeGet<T>(Func<T> getter)
+        {
+            try { return getter(); } catch { return default; }
+        }
+
+        private static int SafeGetAge(Citizen c)
+        {
+            try { return Convert.ToInt32(c.GetAge()); } catch { return 0; }
+        }
+
+        private static bool HasTrait(Citizen c, string traitName)
+        {
+            try
+            {
+                if (c == null || c.characterTraits == null) return false;
+                for (int i = 0; i < c.characterTraits.Count; i++)
+                {
+                    var t = c.characterTraits[i];
+                    if (t != null && string.Equals(t.name, traitName, StringComparison.Ordinal)) return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        private static string GetHomeTelephone(Citizen c)
+        {
+            try
+            {
+                var home = c?.home;
+                if (home != null && home.telephones != null && home.telephones.Count > 0)
+                {
+                    var tel = home.telephones[0];
+                    return tel != null ? tel.ToString() : string.Empty;
+                }
+            }
+            catch { }
+            return string.Empty;
         }
 
         private static readonly object _lock = new object();
@@ -88,7 +159,27 @@ namespace Dashboard
                             employer = citizen.job?.employer?.name?.ToString() ?? "",
                             jobTitle = citizen.job?.name?.ToString() ?? "",
                             salary = citizen.job?.salaryString?.ToString() ?? "",
-                            homeAddress = citizen.home?.thisAsAddress?.name?.ToString() ?? ""
+                            homeAddress = citizen.home?.thisAsAddress?.name?.ToString() ?? "",
+                            // Profile fields (best-effort null-safe)
+                            ageYears = SafeGetAge(citizen),
+                            ageGroup = SafeToString(() => citizen.GetAgeGroup().ToString()),
+                            gender = SafeToString(() => citizen.gender.ToString()),
+                            heightCm = SafeRound(() => citizen.descriptors.heightCM),
+                            heightCategory = SafeToString(() => citizen.descriptors.height.ToString()),
+                            build = SafeToString(() => citizen.descriptors.build.ToString()),
+                            hairType = SafeToString(() => citizen.descriptors.hairType.ToString()),
+                            hairColor = SafeToString(() => citizen.descriptors.hairColourCategory.ToString()),
+                            eyes = SafeToString(() => citizen.descriptors.eyeColour.ToString()),
+                            shoeSize = SafeGet(() => citizen.descriptors.shoeSize),
+                            glasses = HasTrait(citizen, "Affliction-ShortSighted") || HasTrait(citizen, "Affliction-FarSighted"),
+                            facialHair = HasTrait(citizen, "Quirk-FacialHair"),
+                            dateOfBirth = SafeToString(() => citizen.birthday.ToString()),
+                            telephoneNumber = GetHomeTelephone(citizen),
+                            livesInBuilding = SafeToString(() => citizen.home?.building?.ToString()),
+                            livesOnFloor = SafeToString(() => citizen.home?.floor?.ToString()),
+                            worksInBuilding = SafeToString(() => citizen.job?.employer?.address?.ToString()),
+                            workHours = string.Empty,
+                            handwriting = SafeToString(() => citizen.handwriting?.fontAsset?.name)
                         };
                         list.Add(info);
                     }

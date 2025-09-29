@@ -25,6 +25,24 @@
     job: document.getElementById('npc-job'),
     salary: document.getElementById('npc-salary'),
     address: document.getElementById('npc-address'),
+    // Profile fields
+    age: document.getElementById('npc-age'),
+    gender: document.getElementById('npc-gender'),
+    height: document.getElementById('npc-height'),
+    buildTxt: document.getElementById('npc-build'),
+    hair: document.getElementById('npc-hair'),
+    eyes: document.getElementById('npc-eyes'),
+    shoe: document.getElementById('npc-shoe'),
+    glasses: document.getElementById('npc-glasses'),
+    facialhair: document.getElementById('npc-facialhair'),
+    dob: document.getElementById('npc-dob'),
+    phone: document.getElementById('npc-phone'),
+    // Employment/Residence extra
+    workbuilding: document.getElementById('npc-workbuilding'),
+    workhours: document.getElementById('npc-workhours'),
+    livesBuilding: document.getElementById('npc-lives-building'),
+    livesFloor: document.getElementById('npc-lives-floor'),
+    // Dev
     devTeleportPlayer: document.getElementById('dev-teleport-player'),
     devTeleportNpc: document.getElementById('dev-teleport-npc'),
     devStatus: document.getElementById('dev-action-status')
@@ -148,6 +166,35 @@
       
       // Home address
       if (els.address) els.address.textContent = n.homeAddress || '—';
+
+      // Profile values
+      if (els.age) els.age.textContent = (Number.isFinite(n.ageYears) && n.ageYears > 0) ? `${n.ageYears} (${n.ageGroup||''})` : (n.ageGroup || '—');
+      if (els.gender) els.gender.textContent = n.gender || '—';
+      if (els.height) {
+        const hcm = Number(n.heightCm)||0;
+        els.height.textContent = hcm > 0 ? `${hcm} cm (${n.heightCategory||'—'})` : (n.heightCategory || '—');
+      }
+      if (els.buildTxt) els.buildTxt.textContent = n.build || '—';
+      if (els.hair) {
+        const parts = [];
+        if (n.hairType) parts.push(n.hairType);
+        if (n.hairColor) parts.push(n.hairColor.toLowerCase ? n.hairColor.toLowerCase() : n.hairColor);
+        els.hair.textContent = parts.join(', ') || '—';
+      }
+      if (els.eyes) els.eyes.textContent = n.eyes || '—';
+      if (els.shoe) els.shoe.textContent = (Number(n.shoeSize)||0) > 0 ? String(n.shoeSize) : '—';
+      if (els.glasses) els.glasses.textContent = n.glasses ? 'Yes' : 'No';
+      if (els.facialhair) els.facialhair.textContent = n.facialHair ? 'Yes' : 'No';
+      if (els.dob) els.dob.textContent = n.dateOfBirth || '—';
+      if (els.phone) els.phone.textContent = n.telephoneNumber || '—';
+
+      // Employment extras
+      if (els.workbuilding) els.workbuilding.textContent = n.worksInBuilding || '—';
+      if (els.workhours) els.workhours.textContent = n.workHours || '—';
+
+      // Residence extras
+      if (els.livesBuilding) els.livesBuilding.textContent = n.livesInBuilding || '—';
+      if (els.livesFloor) els.livesFloor.textContent = n.livesOnFloor || '—';
     }catch{}
   }
 
