@@ -1,13 +1,70 @@
 'use strict';
 
 (function(){
-  // Theme: apply saved theme immediately
-  try{
-    const THEME_KEY = 'sod_theme';
-    const t = localStorage.getItem(THEME_KEY);
-    if(t === 'red') document.documentElement.classList.add('theme-red');
-    else document.documentElement.classList.remove('theme-red');
-  }catch{}
+  // Theme handling (match app.js)
+  const THEME_KEY = 'sod_theme'; // 'blue' | 'red' | 'green' | 'yellow' | 'purple' | 'cyan' | 'pink' | 'colorblind' | 'custom'
+  const THEME_CUSTOM_KEY = 'sod_theme_custom';
+  const THEME_MAP = {
+    blue: '',
+    red: 'theme-red',
+    green: 'theme-green',
+    yellow: 'theme-yellow',
+    purple: 'theme-purple',
+    cyan: 'theme-cyan',
+    pink: 'theme-pink',
+    colorblind: 'theme-colorblind',
+    custom: ''
+  };
+  function applyTheme(name){
+    const root = document.documentElement;
+    // remove all
+    for(const cls of Object.values(THEME_MAP)){
+      if(!cls) continue; root.classList.remove(cls);
+    }
+    const cls = THEME_MAP[name] || '';
+    if(cls) root.classList.add(cls);
+    if(name !== 'custom') clearCustomVars(); else applyCustomFromStorage();
+  }
+  function loadTheme(){
+    try{
+      const v = localStorage.getItem(THEME_KEY);
+      return (v && (v in THEME_MAP)) ? v : 'blue';
+    }catch{ return 'blue'; }
+  }
+  function hexToRgb(hex){
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '');
+    if(!m) return {r:0,g:179,b:255};
+    return { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) };
+  }
+  function setCustomVars(hex){
+    const {r,g,b} = hexToRgb(hex);
+    const root = document.documentElement.style;
+    const rgba12 = `rgba(${r}, ${g}, ${b}, 0.12)`;
+    const rgba06 = `rgba(${r}, ${g}, ${b}, 0.06)`;
+    root.setProperty('--neon-blue', hex);
+    root.setProperty('--neon-blue-2', hex);
+    root.setProperty('--accent', hex);
+    root.setProperty('--accent-2', hex);
+    root.setProperty('--bg-tint', rgba12);
+    root.setProperty('--scan-tint', rgba06);
+  }
+  function clearCustomVars(){
+    const root = document.documentElement.style;
+    ['--neon-blue','--neon-blue-2','--accent','--accent-2','--bg-tint','--scan-tint'].forEach(v=>root.removeProperty(v));
+  }
+  function applyCustomFromStorage(){
+    try{
+      const hex = localStorage.getItem(THEME_CUSTOM_KEY) || '#00b3ff';
+      setCustomVars(hex);
+    }catch{}
+  }
+  // Initialize theme immediately and react to cross-tab changes
+  const initialTheme = loadTheme();
+  applyTheme(initialTheme);
+  window.addEventListener('storage', (e)=>{
+    if(e.key === THEME_KEY){ applyTheme(loadTheme()); }
+    if(e.key === THEME_CUSTOM_KEY && loadTheme()==='custom'){ applyCustomFromStorage(); }
+  });
 
   const els = {
     dot: document.getElementById('health-dot'),
