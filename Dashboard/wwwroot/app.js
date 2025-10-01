@@ -575,6 +575,17 @@
     return `${date} ${t}`;
   }
 
+  function getDisplayFullName(n){
+    const base = (n?.name || '').trim();
+    const sur = (n?.surname || '').trim();
+    if(!base) return sur;
+    if(!sur) return base;
+    const baseLower = base.toLowerCase();
+    const surLower = sur.toLowerCase();
+    if(baseLower.endsWith(' ' + surLower) || baseLower === surLower) return base;
+    return `${base} ${sur}`;
+  }
+
   function renderNpcCard(npc, label){
     const photoSrc = npc.photo || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottQAAAABJRU5ErkJggg==';
     return `
@@ -582,7 +593,7 @@
         <img src="${photoSrc}" alt="${escapeHtml(npc.name)}" style="width:56px; height:56px; border-radius:10px; border:1px solid var(--border); background:rgba(30,30,40,0.8)"/>
         <div style="flex:1; min-width:0">
           <div style="font-size:11px; color:var(--muted); margin-bottom:4px">${label}</div>
-          <div style="font-weight:600; font-size:14px">${escapeHtml(npc.name)} ${escapeHtml(npc.surname)}</div>
+          <div style="font-weight:600; font-size:14px">${escapeHtml(getDisplayFullName(npc))}</div>
           <div style="font-size:12px; color:var(--muted); margin-top:2px">${escapeHtml(npc.jobTitle || 'Unemployed')}</div>
         </div>
       </div>
