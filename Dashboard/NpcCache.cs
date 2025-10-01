@@ -23,6 +23,7 @@ namespace Dashboard
             public string employer;
             public string jobTitle;
             public string salary;
+            public int workAddressId;
             public string homeAddress;
             public int homeAddressId;
             // Additional profile fields
@@ -199,6 +200,7 @@ namespace Dashboard
                             employer = citizen.job?.employer?.name?.ToString() ?? "",
                             jobTitle = citizen.job?.name?.ToString() ?? "",
                             salary = citizen.job?.salaryString?.ToString() ?? "",
+                            workAddressId = citizen.job?.employer?.address?.id ?? -1,
                             homeAddress = citizen.home?.thisAsAddress?.name?.ToString() ?? "",
                             homeAddressId = citizen.home?.id ?? -1,
                             // Profile fields (best-effort null-safe)

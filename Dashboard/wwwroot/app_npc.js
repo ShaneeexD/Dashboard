@@ -213,8 +213,19 @@
         if (els.koBar) els.koBar.classList.add('hidden');
       }
       
-      // Job information
-      if (els.employer) els.employer.textContent = n.employer || '—';
+      // Job information - make employer clickable if we have a workAddressId
+      if (els.employer) {
+        const employerText = n.employer || '—';
+        if (n.workAddressId && n.workAddressId > 0) {
+          els.employer.innerHTML = `<span class="clickable">${employerText}</span>`;
+          els.employer.style.cursor = 'pointer';
+          els.employer.onclick = () => window.location.href = `residence.html?id=${n.workAddressId}`;
+        } else {
+          els.employer.textContent = employerText;
+          els.employer.onclick = null;
+          els.employer.style.cursor = 'default';
+        }
+      }
       if (els.job) els.job.textContent = n.jobTitle || '—';
       if (els.salary) els.salary.textContent = n.salary || '—';
       

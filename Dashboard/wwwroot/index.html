@@ -158,6 +158,16 @@
               <option value="business">Businesses Only</option>
             </select>
           </label>
+          <label class="metric-label ml-12">
+            <select id="address-count-filter" class="input ml-6" aria-label="Filter by occupant count">
+              <option value="any">Any Count</option>
+              <option value="empty">Empty (0)</option>
+              <option value="has">Has Occupants (1+)</option>
+              <option value="1">Exactly 1</option>
+              <option value="2">Exactly 2</option>
+              <option value="3+">3 or More</option>
+            </select>
+          </label>
           <button id="address-refresh" class="btn">Refresh</button>
         </div>
         <div id="address-list" class="npc-list"></div>

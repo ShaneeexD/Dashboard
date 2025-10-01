@@ -39,6 +39,7 @@
     addressList: document.getElementById('address-list'),
     addressSearch: document.getElementById('address-search'),
     addressFilter: document.getElementById('address-filter'),
+    addressCountFilter: document.getElementById('address-count-filter'),
     addressRefresh: document.getElementById('address-refresh'),
     npcDetails: document.getElementById('npc-details'),
     npcDetPhoto: document.getElementById('npc-det-photo'),
@@ -579,6 +580,7 @@
     if(!els.addressList) return;
     const q = (els.addressSearch?.value || '').trim().toLowerCase();
     const filterType = els.addressFilter?.value || 'all';
+    const filterCount = els.addressCountFilter?.value || 'any';
     
     const filtered = addressCache.filter(a => {
       // Type filter
@@ -586,6 +588,13 @@
       if(filterType === 'business' && a.isResidence) return false;
       // Search filter
       if(q && !(a.name?.toLowerCase().includes(q) || a.buildingName?.toLowerCase().includes(q))) return false;
+      // Count filter
+      const count = a.residentCount || 0;
+      if(filterCount === 'empty' && count !== 0) return false;
+      if(filterCount === 'has' && count === 0) return false;
+      if(filterCount === '1' && count !== 1) return false;
+      if(filterCount === '2' && count !== 2) return false;
+      if(filterCount === '3+' && count < 3) return false;
       return true;
     });
 
@@ -616,6 +625,7 @@
   els.addressRefresh?.addEventListener('click', fetchAddresses);
   els.addressSearch?.addEventListener('input', () => renderAddresses());
   els.addressFilter?.addEventListener('change', () => renderAddresses());
+  els.addressCountFilter?.addEventListener('change', () => renderAddresses());
   
   // Click to open address details
   els.addressList?.addEventListener('click', (e) => {

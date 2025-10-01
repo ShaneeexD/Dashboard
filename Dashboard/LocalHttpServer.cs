@@ -609,6 +609,7 @@ namespace Dashboard
                     sb.Append("\"employer\":\"").Append(JsonEscape(npc.employer)).Append("\",");
                     sb.Append("\"jobTitle\":\"").Append(JsonEscape(npc.jobTitle)).Append("\",");
                     sb.Append("\"salary\":\"").Append(JsonEscape(npc.salary)).Append("\",");
+                    sb.Append("\"workAddressId\":").Append(npc.workAddressId).Append(',');
                     sb.Append("\"homeAddress\":\"").Append(JsonEscape(npc.homeAddress)).Append("\",");
                     sb.Append("\"homeAddressId\":").Append(npc.homeAddressId).Append(',');
                     // Additional profile fields
