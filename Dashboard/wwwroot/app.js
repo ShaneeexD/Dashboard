@@ -466,7 +466,119 @@
     }
   }
 
-  els.refreshBtn.addEventListener('click', () => { fetchHealth(); fetchGame(); });
+  els.refreshBtn?.addEventListener('click', () => { fetchHealth(); fetchGame(); fetchMurderCase(); fetchDeaths(); });
+
+  // Murder case (murderer & victim)
+  async function fetchMurderCase(){
+    try{
+      const res = await fetch('/api/murder', { cache: 'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      
+      const npcRes = await fetch('/api/npcs', { cache: 'no-store' });
+      if(!npcRes.ok) throw new Error('HTTP ' + npcRes.status);
+      const npcs = await npcRes.json();
+      
+      const murdererCard = document.getElementById('murderer-card');
+      const victimCard = document.getElementById('victim-card');
+      
+      if(murdererCard){
+        const murderer = npcs.find(n => n.id === data.murdererId);
+        if(murderer){
+          murdererCard.innerHTML = renderNpcCard(murderer, '🔪 Murderer');
+          murdererCard.className = 'npc-card clickable';
+          murdererCard.onclick = () => window.location.href = `npc.html?id=${murderer.id}`;
+        } else {
+          murdererCard.innerHTML = '<div class="placeholder">No active murderer</div>';
+          murdererCard.className = 'placeholder';
+        }
+      }
+      
+      if(victimCard){
+        const victim = npcs.find(n => n.id === data.victimId);
+        if(victim){
+          victimCard.innerHTML = renderNpcCard(victim, '💀 Victim');
+          victimCard.className = 'npc-card clickable';
+          victimCard.onclick = () => window.location.href = `npc.html?id=${victim.id}`;
+        } else {
+          victimCard.innerHTML = '<div class="placeholder">No active victim</div>';
+          victimCard.className = 'placeholder';
+        }
+      }
+    }catch(err){
+      console.error('Failed to fetch murder case:', err);
+    }
+  }
+
+  // Recent deaths
+  async function fetchDeaths(){
+    try{
+      const res = await fetch('/api/deaths', { cache: 'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const deaths = await res.json();
+      
+      const deathsList = document.getElementById('deaths-list');
+      if(!deathsList) return;
+      
+      if(deaths.length === 0){
+        deathsList.innerHTML = '<div class="placeholder">No deaths recorded yet</div>';
+        deathsList.className = 'placeholder';
+        return;
+      }
+      
+      const html = deaths.map(d => {
+        const realTime = new Date(d.timestamp);
+        const realTimeStr = realTime.toLocaleTimeString();
+        const gameTimeStr = formatGameTime(d.gameTime);
+        return `
+          <div class="death-entry" data-human-id="${d.humanId}">
+            <span class="death-name">${escapeHtml(d.name)}</span>
+            <span class="death-time">
+              <div style="font-size:12px; color:var(--muted)">🎮 ${gameTimeStr}</div>
+              <div style="font-size:11px; color:var(--muted); opacity:0.7">🕐 ${realTimeStr}</div>
+            </span>
+          </div>
+        `;
+      }).join('');
+      
+      deathsList.innerHTML = html;
+      deathsList.className = 'deaths-list';
+      
+      // Make death entries clickable
+      deathsList.querySelectorAll('.death-entry').forEach(entry => {
+        entry.addEventListener('click', () => {
+          const id = Number(entry.dataset.humanId);
+          if(Number.isFinite(id)) window.location.href = `npc.html?id=${id}`;
+        });
+      });
+    }catch(err){
+      console.error('Failed to fetch deaths:', err);
+    }
+  }
+
+  function formatGameTime(gameTime){
+    if(!gameTime || gameTime <= 0) return 'Unknown';
+    // Game time is in hours (0-24 repeating)
+    const hours = Math.floor(gameTime % 24);
+    const minutes = Math.floor((gameTime % 1) * 60);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours === 0 ? 12 : (hours > 12 ? hours - 12 : hours);
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  }
+
+  function renderNpcCard(npc, label){
+    const photoSrc = npc.photo || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottQAAAABJRU5ErkJggg==';
+    return `
+      <div style="display:flex; gap:12px; align-items:center">
+        <img src="${photoSrc}" alt="${escapeHtml(npc.name)}" style="width:56px; height:56px; border-radius:10px; border:1px solid var(--border); background:rgba(30,30,40,0.8)"/>
+        <div style="flex:1; min-width:0">
+          <div style="font-size:11px; color:var(--muted); margin-bottom:4px">${label}</div>
+          <div style="font-weight:600; font-size:14px">${escapeHtml(npc.name)} ${escapeHtml(npc.surname)}</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:2px">${escapeHtml(npc.jobTitle || 'Unemployed')}</div>
+        </div>
+      </div>
+    `;
+  }
 
   // NPCs
   async function fetchNpcs(){
@@ -694,8 +806,12 @@
   // initial
   fetchHealth();
   fetchGame();
+  fetchMurderCase();
+  fetchDeaths();
   setInterval(fetchHealth, 2000);
   setInterval(fetchGame, 2000);
+  setInterval(fetchMurderCase, 5000); // Poll murder case every 5s
+  setInterval(fetchDeaths, 5000); // Poll deaths every 5s
   if (hasViews) {
     setActiveView(getInitialView());
     // Poll NPCs periodically when on NPCs view

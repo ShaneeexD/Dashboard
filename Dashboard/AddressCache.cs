@@ -93,7 +93,7 @@ namespace Dashboard
                                     string jobTitle = string.Empty;
                                     if (!info.isResidence && citizen.job != null && citizen.job.employer?.address?.id == addr.id)
                                     {
-                                        jobTitle = SafeToString(() => citizen.job.preset?.name);
+                                        jobTitle = SafeToString(() => citizen.job.name);
                                     }
                                     
                                     var resident = new ResidentInfo
@@ -116,7 +116,7 @@ namespace Dashboard
                                         string jobTitle = string.Empty;
                                         if (!info.isResidence && human.job != null && human.job.employer?.address?.id == addr.id)
                                         {
-                                            jobTitle = SafeToString(() => human.job.preset?.name);
+                                            jobTitle = SafeToString(() => human.job.name);
                                         }
                                         
                                         var resident = new ResidentInfo

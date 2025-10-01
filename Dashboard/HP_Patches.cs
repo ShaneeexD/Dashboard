@@ -26,10 +26,24 @@ namespace Dashboard
     {
         static void Postfix(Human __instance)
         {
-            var citizen = __instance as Citizen;
-            if (citizen != null)
+            if (__instance != null && __instance.isDead)
             {
-                NpcCache.UpdateDeath(citizen.humanID, true);
+                string name = "Unknown";
+                try
+                {
+                    if (__instance is Citizen citizen)
+                    {
+                        name = $"{citizen.GetCitizenName()} {citizen.GetSurName()}".Trim();
+                        NpcCache.UpdateDeath(citizen.humanID, true);
+                    }
+                    else
+                    {
+                        name = __instance.firstName ?? "Unknown";
+                    }
+                }
+                catch { }
+
+                DeathTracker.RecordDeath(__instance.humanID, name);
             }
         }
     }

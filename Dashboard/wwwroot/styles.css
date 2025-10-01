@@ -169,10 +169,10 @@ body{
   content:""; position:absolute; left:calc(-1 * var(--sidebar-width)); right:0; bottom:-1px; height:3px; pointer-events:none; z-index:0;
   background:linear-gradient(90deg, transparent 0%, var(--neon-blue) 12%, var(--neon-blue-2) 50%, var(--neon-blue) 88%, transparent 100%);
   box-shadow:0 0 12px var(--neon-blue), 0 0 24px rgba(7, 79, 233, 0.55);
-  opacity:.95; animation:neonPulse 3s ease-in-out infinite;
+  opacity:1; animation:neonPulse 3s ease-in-out infinite;
 }
 
-@keyframes neonPulse{0%,100%{opacity:.75}50%{opacity:1}}
+@keyframes neonPulse{0%,100%{opacity:.9}50%{opacity:1}}
 
 @media (prefers-reduced-motion: reduce){
   .sidebar::after, .topbar::after{animation:none}
@@ -281,6 +281,41 @@ body{
   color:var(--muted);
   font-size:14px;
   padding:40px 20px;
+}
+
+/* Deaths list */
+.deaths-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.death-entry{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 14px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%), var(--card);
+  cursor:pointer;
+  transition:all 0.2s ease;
+}
+.death-entry:hover{
+  background:rgba(255,255,255,0.04);
+  border-color:var(--accent);
+  transform:translateX(4px);
+}
+.death-name{
+  font-weight:600;
+  font-size:14px;
+}
+.death-time{
+  font-size:12px;
+  color:var(--muted);
+  text-align:right;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
 }
 .back-link{
   color:var(--accent);

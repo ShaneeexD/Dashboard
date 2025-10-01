@@ -568,6 +568,38 @@ namespace Dashboard
                 return;
             }
 
+            // Murder info (current murderer and victim)
+            if (target.Equals("/api/murder", StringComparison.OrdinalIgnoreCase))
+            {
+                var (murdererId, victimId) = MurderTracker.GetCurrent();
+                string json = $"{{\"murdererId\":{murdererId},\"victimId\":{victimId}}}";
+                WriteJson(writer, 200, json);
+                return;
+            }
+
+            // Recent deaths
+            if (target.Equals("/api/deaths", StringComparison.OrdinalIgnoreCase))
+            {
+                var deaths = DeathTracker.GetRecentDeaths(20);
+                var sb = new StringBuilder();
+                sb.Append("[");
+                bool first = true;
+                foreach (var death in deaths)
+                {
+                    if (!first) sb.Append(",");
+                    first = false;
+                    sb.Append('{');
+                    sb.Append("\"humanId\":").Append(death.humanId).Append(',');
+                    sb.Append("\"name\":\"").Append(JsonEscape(death.name)).Append("\",");
+                    sb.Append("\"timestamp\":\"").Append(death.timestamp.ToString("o")).Append("\",");
+                    sb.Append("\"gameTime\":").Append(death.gameTime.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    sb.Append('}');
+                }
+                sb.Append("]");
+                WriteJson(writer, 200, sb.ToString());
+                return;
+            }
+
             if (target.StartsWith("/api/npc/", StringComparison.OrdinalIgnoreCase))
             {
                 HandleNpcAction(writer, method, target);
