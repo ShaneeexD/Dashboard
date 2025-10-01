@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-  const views = ['home','console','npcs','player','map','stats','settings'];
+  const views = ['home','console','npcs','addresses','player','map','stats','settings'];
   const els = {
     navItems: Array.from(document.querySelectorAll('.nav-item')),
     viewTitle: document.getElementById('view-title'),
@@ -36,6 +36,10 @@
     npcList: document.getElementById('npc-list'),
     npcSearch: document.getElementById('npc-search'),
     npcRefresh: document.getElementById('npc-refresh'),
+    addressList: document.getElementById('address-list'),
+    addressSearch: document.getElementById('address-search'),
+    addressFilter: document.getElementById('address-filter'),
+    addressRefresh: document.getElementById('address-refresh'),
     npcDetails: document.getElementById('npc-details'),
     npcDetPhoto: document.getElementById('npc-det-photo'),
     npcDetName: document.getElementById('npc-det-name'),
@@ -79,7 +83,9 @@
   let playerPresetsLoaded = false;
   let playerPresetMaster = [];
   let npcCache = [];
+  let addressCache = [];
   let selectedNpcId = null;
+  let lastAddressJson = '';
   let playerStatusTimer = null;
   let lastNpcJson = '';
   let logsTimer = null;
@@ -240,6 +246,7 @@
       home: 'Overview',
       console: 'Console',
       npcs: 'NPCs',
+      addresses: 'Addresses',
       player: 'Player',
       map: 'Map',
       stats: 'Stats',
@@ -249,6 +256,10 @@
     if(name === 'npcs'){
       // lazy load when entering NPCs view
       if(npcCache.length === 0) fetchNpcs();
+    }
+    if(name === 'addresses'){
+      // lazy load when entering Addresses view
+      if(addressCache.length === 0) fetchAddresses();
     }
     if(name === 'player'){
       if(!playerPresetsLoaded) fetchPlayerPresets();
@@ -545,6 +556,80 @@
 
   els.npcRefresh?.addEventListener('click', fetchNpcs);
   els.npcSearch?.addEventListener('input', () => renderNpcs());
+  
+  // Addresses
+  async function fetchAddresses(){
+    try{
+      const res = await fetch('/api/addresses', { cache: 'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const arr = await res.json();
+      const snapshot = JSON.stringify(arr);
+      if (snapshot === lastAddressJson) return;
+      lastAddressJson = snapshot;
+      addressCache = arr;
+      renderAddresses();
+    }catch(err){
+      if(els.addressList){
+        els.addressList.innerHTML = '<div class="placeholder">Failed to load addresses</div>';
+      }
+    }
+  }
+
+  function renderAddresses(){
+    if(!els.addressList) return;
+    const q = (els.addressSearch?.value || '').trim().toLowerCase();
+    const filterType = els.addressFilter?.value || 'all';
+    
+    const filtered = addressCache.filter(a => {
+      // Type filter
+      if(filterType === 'residence' && !a.isResidence) return false;
+      if(filterType === 'business' && a.isResidence) return false;
+      // Search filter
+      if(q && !(a.name?.toLowerCase().includes(q) || a.buildingName?.toLowerCase().includes(q))) return false;
+      return true;
+    });
+
+    if(filtered.length === 0){
+      els.addressList.innerHTML = '<div class="placeholder">No addresses found.</div>';
+      return;
+    }
+
+    const html = filtered.map(a => {
+      const typeLabel = a.isResidence ? 'Residence' : 'Business';
+      const residentLabel = a.isResidence ? `${a.residentCount || 0} resident${(a.residentCount||0)===1?'':'s'}` : a.addressPreset || '—';
+      return `
+        <div class="npc-card clickable" data-address-id="${a.id}" title="${escapeHtml(a.name || '')}">
+          <div class="npc-meta" style="flex:1">
+            <div class="npc-name">${escapeHtml(a.name || '—')}</div>
+            <div class="npc-hptext" style="color:var(--muted); font-size:12px">${escapeHtml(a.buildingName || '—')} • ${escapeHtml(a.floor || '—')}</div>
+            <div style="margin-top:6px; display:flex; gap:8px; font-size:11px">
+              <span style="background:rgba(109,197,255,0.15); padding:3px 8px; border-radius:4px; color:var(--accent)">${typeLabel}</span>
+              <span style="color:var(--muted)">${residentLabel}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    els.addressList.innerHTML = html;
+  }
+
+  els.addressRefresh?.addEventListener('click', fetchAddresses);
+  els.addressSearch?.addEventListener('input', () => renderAddresses());
+  els.addressFilter?.addEventListener('change', () => renderAddresses());
+  
+  // Click to open address details
+  els.addressList?.addEventListener('click', (e) => {
+    const card = e.target.closest('.npc-card');
+    if(!card) return;
+    const id = Number(card.dataset.addressId);
+    if(!Number.isFinite(id)) return;
+    try{
+      card.classList.add('clicked');
+      setTimeout(() => card.classList.remove('clicked'), 220);
+    }catch{}
+    window.location.href = `./residence.html?id=${id}`;
+  });
+
   els.playerSearch?.addEventListener('input', () => renderPlayerPresets());
   // Console events
   els.logsRefresh?.addEventListener('click', fetchLogs);
@@ -607,6 +692,11 @@
     setInterval(() => {
       const isOnNpcs = document.getElementById('view-npcs')?.classList.contains('active');
       if(isOnNpcs) fetchNpcs();
+    }, 2000);
+    // Poll Addresses periodically when on Addresses view
+    setInterval(() => {
+      const isOnAddresses = document.getElementById('view-addresses')?.classList.contains('active');
+      if(isOnAddresses) fetchAddresses();
     }, 2000);
   }
 

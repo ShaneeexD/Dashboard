@@ -69,6 +69,7 @@
     healthText: document.getElementById('health-text'),
     residenceName: document.getElementById('residence-name'),
     residenceType: document.getElementById('residence-type'),
+    residentsHeading: document.getElementById('residents-heading'),
     building: document.getElementById('res-building'),
     floor: document.getElementById('res-floor'),
     preset: document.getElementById('res-preset'),
@@ -116,6 +117,9 @@
       els.residenceName.textContent = addr.name || '—';
       els.residenceType.textContent = addr.isResidence ? 'Residence' : 'Commercial/Other';
       
+      // Update heading based on type
+      els.residentsHeading.textContent = addr.isResidence ? 'Residents' : 'Employees';
+      
       // Location info
       els.building.textContent = addr.buildingName || '—';
       els.floor.textContent = addr.floor || (addr.floorNumber >= 0 ? `Floor ${addr.floorNumber}` : '—');
@@ -126,23 +130,31 @@
       els.rooms.textContent = addr.roomCount || '0';
       els.residentCount.textContent = (addr.residents?.length || 0).toString();
       
-      // Residents list
+      // Residents/Employees list
       if (addr.residents && addr.residents.length > 0) {
         let html = '';
         for (const resident of addr.residents) {
           const photoSrc = resident.photo || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottQAAAABJRU5ErkJggg==';
+          const fullName = `${resident.name} ${resident.surname}`.trim();
+          const jobInfo = (!addr.isResidence && resident.jobTitle) ? `<div class="resident-job">${escapeHtml(resident.jobTitle)}</div>` : '';
           html += `
             <div class="resident-card">
-              <img src="${photoSrc}" alt="${resident.name}" class="resident-photo"/>
+              <img src="${photoSrc}" alt="${fullName}" class="resident-photo"/>
               <div class="resident-info">
-                <div class="resident-name"><a href="npc.html?id=${resident.id}">${resident.name} ${resident.surname}</a></div>
+                <div class="resident-name"><a href="npc.html?id=${resident.id}">${escapeHtml(fullName)}</a></div>
+                ${jobInfo}
               </div>
             </div>
           `;
         }
         els.residentsList.innerHTML = html;
       } else {
-        els.residentsList.innerHTML = '<div class="loading-message">No residents</div>';
+        const emptyMsg = addr.isResidence ? 'No residents' : 'No employees';
+        els.residentsList.innerHTML = `<div class="loading-message">${emptyMsg}</div>`;
+      }
+      
+      function escapeHtml(s){
+        return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
       }
     }catch(err){
       console.error('Failed to load residence:', err);

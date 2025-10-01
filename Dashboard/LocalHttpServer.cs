@@ -696,7 +696,8 @@ namespace Dashboard
                             sb.Append("\"id\":").Append(res.id).Append(',');
                             sb.Append("\"name\":\"").Append(JsonEscape(res.name)).Append("\",");
                             sb.Append("\"surname\":\"").Append(JsonEscape(res.surname)).Append("\",");
-                            sb.Append("\"photo\":\"").Append(res.photoBase64 ?? string.Empty).Append("\"");
+                            sb.Append("\"photo\":\"").Append(res.photoBase64 ?? string.Empty).Append("\",");
+                            sb.Append("\"jobTitle\":\"").Append(JsonEscape(res.jobTitle ?? string.Empty)).Append("\"");
                             sb.Append('}');
                         }
                         sb.Append("]}");

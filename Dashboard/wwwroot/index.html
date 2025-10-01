@@ -57,6 +57,9 @@
         <a class="nav-item" href="?view=npcs" data-view="npcs">
           <span>NPCs</span>
         </a>
+        <a class="nav-item" href="?view=addresses" data-view="addresses">
+          <span>Addresses</span>
+        </a>
         <a class="nav-item" href="?view=player" data-view="player">
           <span>Player</span>
         </a>
@@ -143,6 +146,21 @@
           <button id="npc-refresh" class="btn">Refresh</button>
         </div>
         <div id="npc-list" class="npc-list"></div>
+      </section>
+
+      <section id="view-addresses" class="view">
+        <div class="toolbar">
+          <input id="address-search" class="input" type="text" placeholder="Search by name or building..." />
+          <label class="metric-label ml-12">
+            <select id="address-filter" class="input ml-6" aria-label="Filter addresses by type">
+              <option value="all">All Addresses</option>
+              <option value="residence">Residences Only</option>
+              <option value="business">Businesses Only</option>
+            </select>
+          </label>
+          <button id="address-refresh" class="btn">Refresh</button>
+        </div>
+        <div id="address-list" class="npc-list"></div>
       </section>
 
       <section id="view-player" class="view">

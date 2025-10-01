@@ -26,6 +26,7 @@ namespace Dashboard
             public string name;
             public string surname;
             public string photoBase64;
+            public string jobTitle;
         }
 
         private static readonly object _lock = new object();
@@ -77,45 +78,63 @@ namespace Dashboard
                         if (addr.inhabitants != null && addr.inhabitants.Count > 0)
                         {
                             residencesWithInhabitants++;
-                            int humanCount = 0;
-                            int citizenCount = 0;
-                            int nonCitizenCount = 0;
                             
                             foreach (var human in addr.inhabitants)
                             {
                                 if (human == null) continue;
-                                humanCount++;
                                 
-                                // Try direct cast to Citizen
+                                // Try to cast to Citizen first, fallback to Human
                                 Citizen citizen = human as Citizen;
+                                
+                                // If it's a Citizen, use Citizen-specific methods
                                 if (citizen != null)
                                 {
-                                    citizenCount++;
+                                    // Get job title if this is a business and the citizen works here
+                                    string jobTitle = string.Empty;
+                                    if (!info.isResidence && citizen.job != null && citizen.job.employer?.address?.id == addr.id)
+                                    {
+                                        jobTitle = SafeToString(() => citizen.job.preset?.name);
+                                    }
+                                    
                                     var resident = new ResidentInfo
                                     {
                                         id = citizen.humanID,
                                         name = citizen.GetCitizenName() ?? string.Empty,
                                         surname = citizen.GetSurName() ?? string.Empty,
-                                        photoBase64 = NpcCache.GetPhotoBase64(citizen)
+                                        photoBase64 = NpcCache.GetPhotoBase64(citizen),
+                                        jobTitle = jobTitle
                                     };
                                     info.residents.Add(resident);
                                     totalResidents++;
                                 }
-                                else
+                                // Otherwise treat as base Human
+                                else if (human != null)
                                 {
-                                    nonCitizenCount++;
-                                    // Log what type it actually is
-                                    string typeName = human?.GetType()?.Name ?? "null";
-                                    if (nonCitizenCount <= 3) // Only log first 3 to avoid spam
+                                    try
                                     {
-                                        ModLogger.Info($"Address {addr.name} ({addr.id}): Non-Citizen inhabitant type: {typeName}");
+                                        // Get job title if this is a business and the human works here
+                                        string jobTitle = string.Empty;
+                                        if (!info.isResidence && human.job != null && human.job.employer?.address?.id == addr.id)
+                                        {
+                                            jobTitle = SafeToString(() => human.job.preset?.name);
+                                        }
+                                        
+                                        var resident = new ResidentInfo
+                                        {
+                                            id = human.humanID,
+                                            name = SafeToString(() => human.firstName),
+                                            surname = string.Empty, // Base Human doesn't have surname
+                                            photoBase64 = NpcCache.GetPhotoBase64(human),
+                                            jobTitle = jobTitle
+                                        };
+                                        info.residents.Add(resident);
+                                        totalResidents++;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        ModLogger.Warn($"Failed to get Human data for {human.humanID}: {ex.Message}");
                                     }
                                 }
-                            }
-                            
-                            if (humanCount > 0 && citizenCount == 0)
-                            {
-                                ModLogger.Warn($"Address {addr.name} ({addr.id}): {humanCount} inhabitants but 0 Citizens (types logged above)");
                             }
                         }
                     }

@@ -342,15 +342,15 @@ namespace Dashboard
         }
 
 
-        public static string GetPhotoBase64(Citizen citizen)
+        public static string GetPhotoBase64(Human human)
         {
             try
             {
-                if (citizen == null || citizen.evidenceEntry == null) return null;
+                if (human == null || human.evidenceEntry == null) return null;
 
                 var keys = new Il2CppSystem.Collections.Generic.List<Evidence.DataKey>();
                 keys.Add(Evidence.DataKey.photo);
-                Texture2D tex = citizen.evidenceEntry.GetPhoto(keys);
+                Texture2D tex = human.evidenceEntry.GetPhoto(keys);
 
                 if (tex != null)
                 {
@@ -376,7 +376,7 @@ namespace Dashboard
             }
             catch (Exception ex)
             {
-                ModLogger.Warn($"GetPhotoBase64 for {citizen.humanID} failed: {ex.Message}");
+                ModLogger.Warn($"GetPhotoBase64 for {human.humanID} failed: {ex.Message}");
             }
             return null;
         }
