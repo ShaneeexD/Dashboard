@@ -529,12 +529,12 @@
       const html = deaths.map(d => {
         const realTime = new Date(d.timestamp);
         const realTimeStr = realTime.toLocaleTimeString();
-        const gameTimeStr = formatGameTime(d.gameTime);
+        const gameDateTimeStr = formatGameDateTime(d);
         return `
           <div class="death-entry" data-human-id="${d.humanId}">
             <span class="death-name">${escapeHtml(d.name)}</span>
             <span class="death-time">
-              <div style="font-size:12px; color:var(--muted)">🎮 ${gameTimeStr}</div>
+              <div style="font-size:12px; color:var(--muted)">🎮 ${gameDateTimeStr}</div>
               <div style="font-size:11px; color:var(--muted); opacity:0.7">🕐 ${realTimeStr}</div>
             </span>
           </div>
@@ -564,6 +564,15 @@
     const period = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours === 0 ? 12 : (hours > 12 ? hours - 12 : hours);
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  }
+
+  function formatGameDateTime(d){
+    const t = formatGameTime(d?.gameTime);
+    const m = Number(d?.gameMonth)||0;
+    const day = Number(d?.gameDay)||0;
+    const y = Number(d?.gameYear)||0;
+    const date = (m>0 && day>0 && y>0) ? `${m}/${day}/${y}` : 'Unknown date';
+    return `${date} ${t}`;
   }
 
   function renderNpcCard(npc, label){

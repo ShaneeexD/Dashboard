@@ -592,7 +592,10 @@ namespace Dashboard
                     sb.Append("\"humanId\":").Append(death.humanId).Append(',');
                     sb.Append("\"name\":\"").Append(JsonEscape(death.name)).Append("\",");
                     sb.Append("\"timestamp\":\"").Append(death.timestamp.ToString("o")).Append("\",");
-                    sb.Append("\"gameTime\":").Append(death.gameTime.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    sb.Append("\"gameTime\":").Append(death.gameTime.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',');
+                    sb.Append("\"gameMonth\":").Append(death.gameMonth).Append(',');
+                    sb.Append("\"gameDay\":").Append(death.gameDay).Append(',');
+                    sb.Append("\"gameYear\":").Append(death.gameYear);
                     sb.Append('}');
                 }
                 sb.Append("]");
