@@ -25,6 +25,7 @@ namespace Dashboard
             {
                 NpcCache.ClearPhotoCache();
                 NpcCache.RebuildFromGame();
+                AddressCache.RebuildFromGame();
 
                 // Populate base game info on main thread
                 string save = "DEFAULT_SAVE";
@@ -47,6 +48,7 @@ namespace Dashboard
             {
                 NpcCache.ClearPhotoCache();
                 NpcCache.RebuildFromGame();
+                AddressCache.RebuildFromGame();
 
                 // Populate base game info on main thread
                 string save = "DEFAULT_SAVE";

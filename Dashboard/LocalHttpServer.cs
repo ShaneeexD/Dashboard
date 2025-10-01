@@ -610,6 +610,7 @@ namespace Dashboard
                     sb.Append("\"jobTitle\":\"").Append(JsonEscape(npc.jobTitle)).Append("\",");
                     sb.Append("\"salary\":\"").Append(JsonEscape(npc.salary)).Append("\",");
                     sb.Append("\"homeAddress\":\"").Append(JsonEscape(npc.homeAddress)).Append("\",");
+                    sb.Append("\"homeAddressId\":").Append(npc.homeAddressId).Append(',');
                     // Additional profile fields
                     sb.Append("\"ageYears\":").Append(npc.ageYears).Append(',');
                     sb.Append("\"ageGroup\":\"").Append(JsonEscape(npc.ageGroup)).Append("\",");
@@ -636,6 +637,76 @@ namespace Dashboard
                 return;
             }
 
+            // List Addresses
+            if (target.Equals("/api/addresses", StringComparison.OrdinalIgnoreCase))
+            {
+                var list = AddressCache.Snapshot();
+                var sb = new StringBuilder();
+                sb.Append("[");
+                bool first = true;
+                foreach (var addr in list)
+                {
+                    if (!first) sb.Append(",\n");
+                    first = false;
+                    sb.Append('{');
+                    sb.Append("\"id\":").Append(addr.id).Append(',');
+                    sb.Append("\"name\":\"").Append(JsonEscape(addr.name)).Append("\",");
+                    sb.Append("\"buildingName\":\"").Append(JsonEscape(addr.buildingName)).Append("\",");
+                    sb.Append("\"floor\":\"").Append(JsonEscape(addr.floor)).Append("\",");
+                    sb.Append("\"floorNumber\":").Append(addr.floorNumber).Append(',');
+                    sb.Append("\"addressPreset\":\"").Append(JsonEscape(addr.addressPreset)).Append("\",");
+                    sb.Append("\"isResidence\":").Append(addr.isResidence ? "true" : "false").Append(',');
+                    sb.Append("\"residentCount\":").Append(addr.residents?.Count ?? 0).Append(',');
+                    sb.Append("\"designStyle\":\"").Append(JsonEscape(addr.designStyle)).Append("\",");
+                    sb.Append("\"roomCount\":").Append(addr.roomCount);
+                    sb.Append('}');
+                }
+                sb.Append("]");
+                WriteJson(writer, 200, sb.ToString());
+                return;
+            }
+
+            // Get single Address by ID
+            if (target.StartsWith("/api/address/", StringComparison.OrdinalIgnoreCase))
+            {
+                string idStr = target.Substring("/api/address/".Length);
+                if (int.TryParse(idStr, out int id))
+                {
+                    var addr = AddressCache.GetById(id);
+                    if (addr != null)
+                    {
+                        var sb = new StringBuilder();
+                        sb.Append('{');
+                        sb.Append("\"id\":").Append(addr.id).Append(',');
+                        sb.Append("\"name\":\"").Append(JsonEscape(addr.name)).Append("\",");
+                        sb.Append("\"buildingName\":\"").Append(JsonEscape(addr.buildingName)).Append("\",");
+                        sb.Append("\"floor\":\"").Append(JsonEscape(addr.floor)).Append("\",");
+                        sb.Append("\"floorNumber\":").Append(addr.floorNumber).Append(',');
+                        sb.Append("\"addressPreset\":\"").Append(JsonEscape(addr.addressPreset)).Append("\",");
+                        sb.Append("\"isResidence\":").Append(addr.isResidence ? "true" : "false").Append(',');
+                        sb.Append("\"designStyle\":\"").Append(JsonEscape(addr.designStyle)).Append("\",");
+                        sb.Append("\"roomCount\":").Append(addr.roomCount).Append(',');
+                        sb.Append("\"residents\":[");
+                        bool firstResident = true;
+                        foreach (var res in addr.residents)
+                        {
+                            if (!firstResident) sb.Append(",");
+                            firstResident = false;
+                            sb.Append('{');
+                            sb.Append("\"id\":").Append(res.id).Append(',');
+                            sb.Append("\"name\":\"").Append(JsonEscape(res.name)).Append("\",");
+                            sb.Append("\"surname\":\"").Append(JsonEscape(res.surname)).Append("\",");
+                            sb.Append("\"photo\":\"").Append(res.photoBase64 ?? string.Empty).Append("\"");
+                            sb.Append('}');
+                        }
+                        sb.Append("]}");
+                        WriteJson(writer, 200, sb.ToString());
+                        return;
+                    }
+                }
+                WriteSimpleResponse(writer, 404, "Not Found", "Address not found");
+                return;
+            }
 
             WriteSimpleResponse(writer, 404, "Not Found", "Unknown API endpoint");
         }

@@ -162,6 +162,8 @@ body{
 @keyframes nb-float{0%,100%{transform:translateX(0) translateY(0)}33%{transform:translateX(6px) translateY(-4px)}66%{transform:translateX(-4px) translateY(6px)}}
 
 .content{position:relative}
+/* Nudge content slightly right to align with NPC details page */
+.content > .npc-details-container{padding: 0 28px 24px 36px}
 .topbar{display:flex; align-items:center; justify-content:space-between; padding:20px 28px; border-bottom:1px solid var(--border); -webkit-backdrop-filter:saturate(120%) blur(8px); backdrop-filter:saturate(120%) blur(8px); position:relative; border-bottom-color:transparent; z-index:1}
 .topbar::after{
   content:""; position:absolute; left:calc(-1 * var(--sidebar-width)); right:0; bottom:-1px; height:3px; pointer-events:none; z-index:0;
@@ -182,8 +184,124 @@ body{
 }
 .btn:hover{filter:brightness(1.1)}
 
+/* Topbar back button to match primary btn */
+.topbar .back-link{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:10px 14px; border-radius:10px; border:1px solid var(--border);
+  background:linear-gradient(135deg, rgba(109,197,255,0.2), rgba(122,243,197,0.18));
+  color:var(--text); text-decoration:none; font-weight:600;
+}
+.topbar .back-link:hover{filter:brightness(1.1); color:var(--text)}
+
 /* Settings theme radio spacing */
 .theme-options label{margin-right:14px}
+
+/* Residence page - reuses NPC detail styles */
+.residence-type-badge{
+  display:inline-block;
+  background:linear-gradient(135deg, rgba(109,197,255,0.15), rgba(122,243,197,0.1));
+  border:1px solid var(--border);
+  padding:6px 14px;
+  border-radius:8px;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+  color:var(--accent);
+  margin-top:8px;
+  font-weight:600;
+}
+.residents-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(200px,1fr));
+  gap:12px;
+  margin-top:12px;
+}
+.resident-card{
+  background:linear-gradient(135deg, rgba(109,197,255,0.05), rgba(122,243,197,0.03));
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  transition:all 0.25s cubic-bezier(0.4,0,0.2,1);
+  position:relative;
+  overflow:hidden;
+}
+.resident-card::before{
+  content:'';
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:2px;
+  background:linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+  opacity:0;
+  transition:opacity 0.25s;
+}
+.resident-card:hover{
+  border-color:var(--neon-blue);
+  box-shadow:0 0 25px rgba(109,197,255,0.15), inset 0 0 15px rgba(109,197,255,0.05);
+  transform:translateY(-3px);
+}
+.resident-card:hover::before{opacity:1}
+.resident-photo{
+  width:56px;
+  height:56px;
+  border-radius:8px;
+  object-fit:cover;
+  border:2px solid var(--border);
+  transition:border-color 0.25s;
+}
+.resident-card:hover .resident-photo{border-color:var(--neon-blue)}
+.resident-info{flex:1; min-width:0}
+.resident-name{
+  font-weight:600;
+  font-size:13px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.resident-name a{
+  color:var(--text);
+  text-decoration:none;
+  transition:color 0.2s;
+}
+.resident-name a:hover{color:var(--accent)}
+.loading-message{
+  text-align:center;
+  color:var(--muted);
+  font-size:14px;
+  padding:40px 20px;
+}
+.back-link{
+  color:var(--accent);
+  text-decoration:none;
+  font-size:14px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:16px;
+  transition:all 0.2s;
+  font-weight:500;
+}
+.back-link:hover{
+  color:var(--accent-2);
+  transform:translateX(-4px);
+}
+
+/* Make address clickable in NPC details */
+.detail-value.clickable{
+  color:var(--accent);
+  cursor:pointer;
+  text-decoration:underline;
+  text-decoration-color:transparent;
+  transition:all 0.2s;
+}
+.detail-value.clickable:hover{
+  text-decoration-color:var(--accent);
+  color:var(--accent-2);
+}
 
 /* Console */
 .console-output{

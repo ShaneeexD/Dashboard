@@ -232,7 +232,9 @@
 
   function setActiveView(name){
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById('view-' + name).classList.add('active');
+    const viewEl = document.getElementById('view-' + name);
+    if(!viewEl) return; // Not on the main dashboard page
+    viewEl.classList.add('active');
     els.navItems.forEach(i => i.classList.toggle('active', i.getAttribute('data-view') === name));
     els.viewTitle.textContent = ({
       home: 'Overview',
@@ -263,17 +265,21 @@
     }
   }
 
-  els.navItems.forEach(i => i.addEventListener('click', e => {
-    e.preventDefault();
-    const v = i.getAttribute('data-view');
-    if(views.includes(v)) {
-      // Update URL without reloading the page
-      const url = new URL(window.location);
-      url.searchParams.set('view', v);
-      window.history.pushState({}, '', url);
-      setActiveView(v);
-    }
-  }));
+  // Only intercept nav clicks on dashboard pages with views present
+  const hasViews = !!document.getElementById('view-home');
+  if (hasViews) {
+    els.navItems.forEach(i => i.addEventListener('click', e => {
+      e.preventDefault();
+      const v = i.getAttribute('data-view');
+      if(views.includes(v)) {
+        // Update URL without reloading the page
+        const url = new URL(window.location);
+        url.searchParams.set('view', v);
+        window.history.pushState({}, '', url);
+        setActiveView(v);
+      }
+    }));
+  }
 
   function setPlayerStatus(message, tone='info'){
     if(!els.playerStatus) return;
@@ -591,16 +597,18 @@
   }
   
   // initial
-  setActiveView(getInitialView());
   fetchHealth();
   fetchGame();
   setInterval(fetchHealth, 2000);
   setInterval(fetchGame, 2000);
-  // Poll NPCs periodically when on NPCs view
-  setInterval(() => {
-    const isOnNpcs = document.getElementById('view-npcs')?.classList.contains('active');
-    if(isOnNpcs) fetchNpcs();
-  }, 2000);
+  if (hasViews) {
+    setActiveView(getInitialView());
+    // Poll NPCs periodically when on NPCs view
+    setInterval(() => {
+      const isOnNpcs = document.getElementById('view-npcs')?.classList.contains('active');
+      if(isOnNpcs) fetchNpcs();
+    }, 2000);
+  }
 
   // Logs polling helpers
   async function fetchLogs(){

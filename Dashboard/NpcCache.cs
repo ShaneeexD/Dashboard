@@ -24,6 +24,7 @@ namespace Dashboard
             public string jobTitle;
             public string salary;
             public string homeAddress;
+            public int homeAddressId;
             // Additional profile fields
             public int ageYears;
             public string ageGroup;
@@ -199,6 +200,7 @@ namespace Dashboard
                             jobTitle = citizen.job?.name?.ToString() ?? "",
                             salary = citizen.job?.salaryString?.ToString() ?? "",
                             homeAddress = citizen.home?.thisAsAddress?.name?.ToString() ?? "",
+                            homeAddressId = citizen.home?.id ?? -1,
                             // Profile fields (best-effort null-safe)
                             ageYears = SafeGetAge(citizen),
                             ageGroup = SafeToString(() => citizen.GetAgeGroup().ToString()),
@@ -340,7 +342,7 @@ namespace Dashboard
         }
 
 
-        private static string GetPhotoBase64(Citizen citizen)
+        public static string GetPhotoBase64(Citizen citizen)
         {
             try
             {

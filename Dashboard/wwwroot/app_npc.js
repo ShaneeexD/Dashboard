@@ -218,8 +218,19 @@
       if (els.job) els.job.textContent = n.jobTitle || '—';
       if (els.salary) els.salary.textContent = n.salary || '—';
       
-      // Home address
-      if (els.address) els.address.textContent = n.homeAddress || '—';
+      // Home address - make it clickable if we have an addressId
+      if (els.address) {
+        const addressText = n.homeAddress || '—';
+        if (n.homeAddressId && n.homeAddressId > 0) {
+          els.address.innerHTML = `<span class="clickable">${addressText}</span>`;
+          els.address.style.cursor = 'pointer';
+          els.address.onclick = () => window.location.href = `residence.html?id=${n.homeAddressId}`;
+        } else {
+          els.address.textContent = addressText;
+          els.address.onclick = null;
+          els.address.style.cursor = 'default';
+        }
+      }
 
       // Profile values
       if (els.age) els.age.textContent = (Number.isFinite(n.ageYears) && n.ageYears > 0) ? `${n.ageYears} (${n.ageGroup||''})` : (n.ageGroup || '—');
