@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-  const views = ['home','console','npcs','addresses','player','map','stats','settings'];
+  const views = ['home','console','npcs','addresses','player','map','stats','methods','settings'];
   const els = {
     navItems: Array.from(document.querySelectorAll('.nav-item')),
     viewTitle: document.getElementById('view-title'),
@@ -251,6 +251,7 @@
       player: 'Player',
       map: 'Map',
       stats: 'Stats',
+      methods: 'Code Execution',
       settings: 'Settings'
     })[name] || 'Overview';
 
@@ -1082,5 +1083,284 @@
       // Ignore preview errors to avoid UI flicker
     }
   }
+
+  // ========== METHOD BROWSER ==========
+  let methodCache = [];
+  let selectedMethod = null;
+
+  const methodEls = {
+    search: document.getElementById('method-search'),
+    searchBtn: document.getElementById('method-search-btn'),
+    results: document.getElementById('method-results'),
+    details: document.getElementById('method-details'),
+    info: document.getElementById('method-info'),
+    params: document.getElementById('method-params'),
+    invokeBtn: document.getElementById('method-invoke-btn'),
+    result: document.getElementById('method-result'),
+    // Tabs
+    tabSearch: document.getElementById('method-tab-search'),
+    tabCode: document.getElementById('method-tab-code'),
+    panelSearch: document.getElementById('method-panel-search'),
+    panelCode: document.getElementById('method-panel-code'),
+    // Code editor
+    codeEditor: document.getElementById('code-editor'),
+    codeExecuteBtn: document.getElementById('code-execute-btn'),
+    codeResult: document.getElementById('code-result')
+  };
+
+  async function searchMethods(query){
+    if(!query || query.trim().length < 2){
+      if(methodEls.results) methodEls.results.innerHTML = '<div class="placeholder">Enter at least 2 characters to search</div>';
+      return;
+    }
+    
+    try{
+      const res = await fetch(`/api/methods/search?q=${encodeURIComponent(query)}&max=50`, { cache:'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const methods = await res.json();
+      methodCache = methods;
+      
+      if(methods.length === 0){
+        if(methodEls.results) methodEls.results.innerHTML = '<div class="placeholder">No methods found</div>';
+        return;
+      }
+      
+      const html = methods.map(m => `
+        <div class="npc-card clickable" data-method-index="${methods.indexOf(m)}" style="cursor:pointer">
+          <div style="flex:1; min-width:0">
+            <div style="font-weight:600; font-size:14px; color:var(--accent)">${escapeHtml(m.fullName)}</div>
+            <div style="font-size:12px; color:var(--muted); margin-top:4px">
+              ${m.isStatic ? '⚡ Static' : '🔗 Instance'} • 
+              ${m.isPublic ? '🌐 Public' : '🔒 Private'} • 
+              Returns: ${escapeHtml(m.returnType)}
+            </div>
+            <div style="font-size:11px; color:var(--muted); margin-top:4px">
+              ${m.parameters.length === 0 ? 'No parameters' : m.parameters.map(p => `${p.name}: ${p.type}`).join(', ')}
+            </div>
+            <div style="font-size:11px; color:var(--text-dim); margin-top:4px">From: ${escapeHtml(m.declaringAssembly)}</div>
+          </div>
+        </div>
+      `).join('');
+      
+      if(methodEls.results) methodEls.results.innerHTML = html;
+      
+      // Add click handlers
+      methodEls.results.querySelectorAll('.npc-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const idx = Number(card.dataset.methodIndex);
+          if(Number.isFinite(idx)) selectMethod(methodCache[idx]);
+        });
+      });
+    }catch(err){
+      console.error('Method search error:', err);
+      if(methodEls.results) methodEls.results.innerHTML = '<div class="placeholder">Search failed</div>';
+    }
+  }
+
+  function selectMethod(method){
+    selectedMethod = method;
+    
+    // Show details panel
+    if(methodEls.details) methodEls.details.style.display = 'block';
+    
+    // Render method info
+    const infoHtml = `
+      <div class="kv">
+        <div><span class="k">Class:</span> <span class="v">${escapeHtml(method.className)}</span></div>
+        <div><span class="k">Method:</span> <span class="v">${escapeHtml(method.methodName)}</span></div>
+        <div><span class="k">Type:</span> <span class="v">${method.isStatic ? 'Static' : 'Instance'}</span></div>
+        <div><span class="k">Visibility:</span> <span class="v">${method.isPublic ? 'Public' : 'Private'}</span></div>
+        <div><span class="k">Returns:</span> <span class="v">${escapeHtml(method.returnType)}</span></div>
+        <div><span class="k">Assembly:</span> <span class="v">${escapeHtml(method.declaringAssembly)}</span></div>
+      </div>
+    `;
+    if(methodEls.info) methodEls.info.innerHTML = infoHtml;
+    
+    // Render parameter inputs
+    if(method.parameters.length === 0){
+      if(methodEls.params) methodEls.params.innerHTML = '<div style="color:var(--muted); font-size:14px">✅ No parameters required - ready to execute!</div>';
+    } else {
+      const paramsTitle = `<div style="font-weight:600; margin-bottom:12px; color:var(--accent)">📝 Parameters (${method.parameters.length}):</div>`;
+      const paramsHtml = method.parameters.map((p, idx) => {
+        const typeHint = getTypeHint(p.type);
+        return `
+          <div class="card" style="margin-bottom:12px; padding:12px; background:rgba(255,255,255,0.02)">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
+              <span style="font-weight:600; color:var(--text)">${escapeHtml(p.name)}</span>
+              <span style="font-size:11px; padding:2px 6px; border-radius:4px; background:rgba(109,197,255,0.15); color:var(--accent)">${escapeHtml(p.type)}</span>
+              ${p.hasDefaultValue ? `<span style="font-size:11px; color:var(--muted)">Optional</span>` : `<span style="font-size:11px; color:#ff9800">Required</span>`}
+            </div>
+            <input type="text" class="input param-input" data-param-index="${idx}" data-param-name="${escapeHtml(p.name)}" 
+                   placeholder="${typeHint}${p.hasDefaultValue ? ' (default: ' + escapeHtml(p.defaultValue) + ')' : ''}" 
+                   style="width:100%" />
+          </div>
+        `;
+      }).join('');
+      if(methodEls.params) methodEls.params.innerHTML = paramsTitle + paramsHtml;
+    }
+  }
+
+  function getTypeHint(type){
+    switch(type.toLowerCase()){
+      case 'int32':
+      case 'int':
+        return 'Enter a whole number (e.g., 42)';
+      case 'single':
+      case 'float':
+      case 'double':
+        return 'Enter a decimal number (e.g., 3.14)';
+      case 'boolean':
+      case 'bool':
+        return 'Enter true or false';
+      case 'string':
+        return 'Enter any text';
+      default:
+        return `Enter a ${type} value`;
+    }
+  }
+
+  async function invokeMethod(){
+    if(!selectedMethod) return;
+    
+    // Gather parameters
+    const paramInputs = methodEls.params?.querySelectorAll('.param-input') || [];
+    const params = [];
+    paramInputs.forEach(input => {
+      const value = input.value.trim();
+      if(value) params.push(value);
+    });
+    
+    // Build method call like: ClassName.Instance.MethodName(arg1, arg2)
+    let methodCall = '';
+    
+    if(selectedMethod.isStatic){
+      // Static method: ClassName.MethodName(args)
+      methodCall = `${selectedMethod.className}.${selectedMethod.methodName}(${params.join(', ')})`;
+    } else {
+      // Instance method: ClassName.Instance.MethodName(args)
+      methodCall = `${selectedMethod.className}.Instance.${selectedMethod.methodName}(${params.join(', ')})`;
+    }
+    
+    try{
+      if(methodEls.result) methodEls.result.innerHTML = '<div class="placeholder">Executing...</div>';
+      
+      const res = await fetch(`/api/code/execute?code=${encodeURIComponent(methodCall)}`, { cache:'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const result = await res.json();
+      
+      if(result.success){
+        const resultHtml = `
+          <div class="card" style="background:rgba(0,180,0,0.1); border-color:rgba(0,255,0,0.3)">
+            <div class="card-title" style="color:#00ff00">✅ Execution Successful</div>
+            <div style="margin-top:12px">
+              <div style="font-weight:600; margin-bottom:8px">Output:</div>
+              <pre class="console-output" style="max-height:400px; overflow:auto">${escapeHtml(result.output || '(no output)')}</pre>
+            </div>
+          </div>
+        `;
+        if(methodEls.result) methodEls.result.innerHTML = resultHtml;
+      } else {
+        const errorHtml = `
+          <div class="card" style="background:rgba(180,0,0,0.1); border-color:rgba(255,0,0,0.3)">
+            <div class="card-title" style="color:#ff4444">❌ Execution Failed</div>
+            <div style="margin-top:12px">
+              <pre class="console-output" style="max-height:400px; overflow:auto; color:#ff6666">${escapeHtml(result.error || 'Unknown error')}</pre>
+            </div>
+          </div>
+        `;
+        if(methodEls.result) methodEls.result.innerHTML = errorHtml;
+      }
+    }catch(err){
+      console.error('Method invoke error:', err);
+      if(methodEls.result) methodEls.result.innerHTML = '<div class="card" style="background:rgba(180,0,0,0.1); border-color:rgba(255,0,0,0.3)"><div class="card-title" style="color:#ff4444">❌ Request Failed</div><div>'+escapeHtml(err.message)+'</div></div>';
+    }
+  }
+
+  // Event listeners
+  methodEls.searchBtn?.addEventListener('click', () => {
+    const query = methodEls.search?.value || '';
+    searchMethods(query);
+  });
+
+  methodEls.search?.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      const query = methodEls.search?.value || '';
+      searchMethods(query);
+    }
+  });
+
+  methodEls.invokeBtn?.addEventListener('click', invokeMethod);
+
+  // Tab switching
+  methodEls.tabSearch?.addEventListener('click', () => {
+    if(methodEls.panelSearch) methodEls.panelSearch.style.display = 'block';
+    if(methodEls.panelCode) methodEls.panelCode.style.display = 'none';
+    if(methodEls.tabSearch) methodEls.tabSearch.style.background = 'var(--accent)';
+    if(methodEls.tabSearch) methodEls.tabSearch.style.color = 'var(--bg)';
+    if(methodEls.tabCode) methodEls.tabCode.style.background = '';
+    if(methodEls.tabCode) methodEls.tabCode.style.color = '';
+  });
+
+  methodEls.tabCode?.addEventListener('click', () => {
+    if(methodEls.panelSearch) methodEls.panelSearch.style.display = 'none';
+    if(methodEls.panelCode) methodEls.panelCode.style.display = 'block';
+    if(methodEls.tabCode) methodEls.tabCode.style.background = 'var(--accent)';
+    if(methodEls.tabCode) methodEls.tabCode.style.color = 'var(--bg)';
+    if(methodEls.tabSearch) methodEls.tabSearch.style.background = '';
+    if(methodEls.tabSearch) methodEls.tabSearch.style.color = '';
+  });
+
+  // Code execution
+  async function executeCode(){
+    const code = methodEls.codeEditor?.value || '';
+    if(!code.trim()){
+      if(methodEls.codeResult) methodEls.codeResult.innerHTML = '<div class="placeholder">Enter some code to execute</div>';
+      return;
+    }
+
+    try{
+      if(methodEls.codeResult) methodEls.codeResult.innerHTML = '<div class="placeholder">Compiling and executing...</div>';
+      
+      const res = await fetch(`/api/code/execute?code=${encodeURIComponent(code)}`, { cache:'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const result = await res.json();
+      
+      if(result.success){
+        const resultHtml = `
+          <div class="card" style="background:rgba(0,180,0,0.1); border-color:rgba(0,255,0,0.3)">
+            <div class="card-title" style="color:#00ff00">✅ Execution Successful</div>
+            <div style="margin-top:12px">
+              <div style="font-weight:600; margin-bottom:8px">Output:</div>
+              <pre class="console-output" style="max-height:400px; overflow:auto">${escapeHtml(result.output || '(no output)')}</pre>
+            </div>
+          </div>
+        `;
+        if(methodEls.codeResult) methodEls.codeResult.innerHTML = resultHtml;
+      } else {
+        const errorHtml = `
+          <div class="card" style="background:rgba(180,0,0,0.1); border-color:rgba(255,0,0,0.3)">
+            <div class="card-title" style="color:#ff4444">❌ Execution Failed</div>
+            <div style="margin-top:12px">
+              <pre class="console-output" style="max-height:400px; overflow:auto; color:#ff6666">${escapeHtml(result.error || 'Unknown error')}</pre>
+            </div>
+          </div>
+        `;
+        if(methodEls.codeResult) methodEls.codeResult.innerHTML = errorHtml;
+      }
+    }catch(err){
+      console.error('Code execution error:', err);
+      if(methodEls.codeResult) methodEls.codeResult.innerHTML = '<div class="card" style="background:rgba(180,0,0,0.1); border-color:rgba(255,0,0,0.3)"><div class="card-title" style="color:#ff4444">❌ Request Failed</div><div>'+escapeHtml(err.message)+'</div></div>';
+    }
+  }
+
+  methodEls.codeExecuteBtn?.addEventListener('click', executeCode);
+
+  // Allow Ctrl+Enter to execute code
+  methodEls.codeEditor?.addEventListener('keydown', (e) => {
+    if(e.ctrlKey && e.key === 'Enter'){
+      e.preventDefault();
+      executeCode();
+    }
+  });
 
 })();

@@ -69,6 +69,9 @@
         <a class="nav-item" href="?view=stats" data-view="stats">
           <span>Stats</span>
         </a>
+        <a class="nav-item" href="?view=methods" data-view="methods">
+          <span>Code Execution</span>
+        </a>
         <a class="nav-item" href="?view=console" data-view="console">
           <span>Console</span>
         </a>
@@ -257,6 +260,52 @@
             <div class="card-title">Hierarchy</div>
             <pre id="map-tree" class="console-output map-tree"></pre>
           </div>
+        </div>
+      </section>
+
+      <section id="view-methods" class="view">
+        <div class="toolbar" style="display:flex; gap:12px; align-items:center; margin-bottom:16px">
+          <button id="method-tab-search" class="btn" style="background:var(--accent); color:var(--bg)">Method Browser</button>
+          <button id="method-tab-code" class="btn">Code Editor</button>
+        </div>
+
+        <div id="method-panel-search">
+          <div class="toolbar">
+            <input id="method-search" class="input" type="text" placeholder="Search methods (e.g., TryPickNewVictimSite)..." />
+            <button id="method-search-btn" class="btn">Search</button>
+          </div>
+          <div id="method-results" class="placeholder">Enter a method name to search</div>
+          <div id="method-details" style="display:none; margin-top:24px;">
+            <div class="card">
+              <div class="card-title">Method Details</div>
+              <div id="method-info"></div>
+              <div id="method-params" style="margin-top:16px"></div>
+              <button id="method-invoke-btn" class="btn" style="margin-top:16px">Execute Method</button>
+            </div>
+            <div id="method-result" style="margin-top:16px"></div>
+          </div>
+        </div>
+
+        <div id="method-panel-code" style="display:none">
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">C# Code Editor</div>
+            <div style="margin-bottom:12px; font-size:13px; color:var(--muted)">
+              Execute method calls using reflection. Format: ClassName.Instance.MethodName(args)
+            </div>
+            <textarea id="code-editor" placeholder="Examples:
+
+MurderController.Instance.TryPickNewVictimSite()
+
+Player.Instance.SetHealth(100.0)
+
+SessionData.Instance.PauseGame()
+
+Game.Log(&quot;Hello from dashboard!&quot;)
+
+Note: Use the Method Browser tab for more advanced searching and parameter help."></textarea>
+            <button id="code-execute-btn" class="btn">Execute Code</button>
+          </div>
+          <div id="code-result"></div>
         </div>
       </section>
 

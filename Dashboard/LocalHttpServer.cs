@@ -615,6 +615,129 @@ namespace Dashboard
                 return;
             }
 
+            // Method browser search
+            if (target.StartsWith("/api/methods/search", StringComparison.OrdinalIgnoreCase))
+            {
+                var query = GetQueryValue(target, "q");
+                var maxResults = 50;
+                var maxStr = GetQueryValue(target, "max");
+                if (!string.IsNullOrEmpty(maxStr) && int.TryParse(maxStr, out int parsedMax))
+                {
+                    maxResults = Math.Min(parsedMax, 200);
+                }
+
+                var results = MethodBrowser.SearchMethods(query, maxResults);
+                var sb = new StringBuilder();
+                sb.Append("[");
+                bool first = true;
+                foreach (var m in results)
+                {
+                    if (!first) sb.Append(",");
+                    first = false;
+                    sb.Append("{");
+                    sb.Append("\"className\":\"").Append(JsonEscape(m.className)).Append("\",");
+                    sb.Append("\"methodName\":\"").Append(JsonEscape(m.methodName)).Append("\",");
+                    sb.Append("\"fullName\":\"").Append(JsonEscape(m.fullName)).Append("\",");
+                    sb.Append("\"returnType\":\"").Append(JsonEscape(m.returnType)).Append("\",");
+                    sb.Append("\"isStatic\":").Append(m.isStatic ? "true" : "false").Append(",");
+                    sb.Append("\"isPublic\":").Append(m.isPublic ? "true" : "false").Append(",");
+                    sb.Append("\"declaringAssembly\":\"").Append(JsonEscape(m.declaringAssembly)).Append("\",");
+                    sb.Append("\"parameters\":[");
+                    bool firstParam = true;
+                    foreach (var p in m.parameters)
+                    {
+                        if (!firstParam) sb.Append(",");
+                        firstParam = false;
+                        sb.Append("{");
+                        sb.Append("\"name\":\"").Append(JsonEscape(p.name)).Append("\",");
+                        sb.Append("\"type\":\"").Append(JsonEscape(p.type)).Append("\",");
+                        sb.Append("\"hasDefaultValue\":").Append(p.hasDefaultValue ? "true" : "false");
+                        if (p.hasDefaultValue && p.defaultValue != null)
+                        {
+                            sb.Append(",\"defaultValue\":\"").Append(JsonEscape(p.defaultValue)).Append("\"");
+                        }
+                        sb.Append("}");
+                    }
+                    sb.Append("]}");
+                }
+                sb.Append("]");
+                WriteJson(writer, 200, sb.ToString());
+                return;
+            }
+
+            // Method invocation (GET with query params for simplicity)
+            if (target.StartsWith("/api/methods/invoke", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var className = GetQueryValue(target, "class");
+                    var methodName = GetQueryValue(target, "method");
+                    
+                    // Parse parameters (format: p0=value&p1=value&p2=value...)
+                    var parameters = new Dictionary<string, string>();
+                    int paramIndex = 0;
+                    while (true)
+                    {
+                        var paramValue = GetQueryValue(target, $"p{paramIndex}");
+                        if (paramValue == null) break;
+                        parameters[$"p{paramIndex}"] = paramValue;
+                        paramIndex++;
+                    }
+
+                    var result = MethodBrowser.InvokeMethod(className, methodName, parameters);
+                    var sb = new StringBuilder();
+                    sb.Append("{");
+                    sb.Append("\"success\":").Append(result.success ? "true" : "false").Append(",");
+                    if (!string.IsNullOrEmpty(result.message))
+                        sb.Append("\"message\":\"").Append(JsonEscape(result.message)).Append("\",");
+                    if (!string.IsNullOrEmpty(result.returnValue))
+                        sb.Append("\"returnValue\":\"").Append(JsonEscape(result.returnValue)).Append("\",");
+                    if (!string.IsNullOrEmpty(result.error))
+                        sb.Append("\"error\":\"").Append(JsonEscape(result.error)).Append("\",");
+                    sb.Length--; // Remove trailing comma
+                    sb.Append("}");
+                    WriteJson(writer, 200, sb.ToString());
+                }
+                catch (Exception ex)
+                {
+                    WriteSimpleResponse(writer, 500, "Internal Server Error", ex.Message);
+                }
+                return;
+            }
+
+            // Code execution
+            if (target.StartsWith("/api/code/execute", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var code = GetQueryValue(target, "code");
+                    if (string.IsNullOrEmpty(code))
+                    {
+                        WriteSimpleResponse(writer, 400, "Bad Request", "Code parameter is required");
+                        return;
+                    }
+
+                    var result = CodeExecutor.Execute(code);
+                    var sb = new StringBuilder();
+                    sb.Append("{");
+                    sb.Append("\"success\":").Append(result.success ? "true" : "false").Append(",");
+                    if (!string.IsNullOrEmpty(result.output))
+                        sb.Append("\"output\":\"").Append(JsonEscape(result.output)).Append("\",");
+                    if (!string.IsNullOrEmpty(result.error))
+                        sb.Append("\"error\":\"").Append(JsonEscape(result.error)).Append("\",");
+                    if (result.returnValue != null)
+                        sb.Append("\"returnValue\":\"").Append(JsonEscape(result.returnValue.ToString())).Append("\",");
+                    sb.Length--; // Remove trailing comma
+                    sb.Append("}");
+                    WriteJson(writer, 200, sb.ToString());
+                }
+                catch (Exception ex)
+                {
+                    WriteSimpleResponse(writer, 500, "Internal Server Error", ex.Message);
+                }
+                return;
+            }
+
             // List NPCs
             if (target.Equals("/api/npcs", StringComparison.OrdinalIgnoreCase))
             {

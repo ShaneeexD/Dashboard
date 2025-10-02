@@ -525,3 +525,31 @@ select.input option{background:var(--bg-elev); color:var(--text)}
   .npc-details{position:relative; top:auto}
   .npc-page{grid-template-columns:1fr}
 }
+
+/* Code Editor Styles */
+#code-editor{
+  width:100%;
+  color:#ffffff;
+  background:var(--bg-dark);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:12px;
+  font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size:13px;
+  line-height:1.5;
+  resize:vertical;
+  min-height:300px;
+}
+
+#code-editor::placeholder{
+  color:var(--muted);
+  opacity:0.6;
+}
+
+#code-execute-btn{
+  width:100%;
+  margin-top:16px;
+  padding:12px;
+  font-size:14px;
+  font-weight:600;
+}
