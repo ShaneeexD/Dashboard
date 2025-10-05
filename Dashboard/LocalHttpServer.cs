@@ -738,6 +738,104 @@ namespace Dashboard
                 return;
             }
 
+            // Relationship graph for specific NPC
+            if (target.StartsWith("/api/relationships/npc/", StringComparison.OrdinalIgnoreCase))
+            {
+                var pathSegments = target.Split('/');
+                if (pathSegments.Length >= 5 && int.TryParse(pathSegments[4].Split('?')[0], out int npcId))
+                {
+                    var depthStr = GetQueryValue(target, "depth");
+                    int depth = 1;
+                    if (!string.IsNullOrEmpty(depthStr) && int.TryParse(depthStr, out int parsedDepth))
+                    {
+                        depth = Math.Min(parsedDepth, 3); // Max depth of 3
+                    }
+
+                    var graph = RelationshipTracker.GetRelationshipGraph(npcId, depth);
+                    var sb = new StringBuilder();
+                    sb.Append("{\"nodes\":[");
+                    bool first = true;
+                    foreach (var node in graph.nodes)
+                    {
+                        if (!first) sb.Append(",");
+                        first = false;
+                        sb.Append("{");
+                        sb.Append("\"id\":").Append(node.id).Append(",");
+                        sb.Append("\"name\":\"").Append(JsonEscape(node.name)).Append("\",");
+                        sb.Append("\"occupation\":\"").Append(JsonEscape(node.occupation)).Append("\",");
+                        sb.Append("\"connectionCount\":").Append(node.connectionCount).Append(",");
+                        sb.Append("\"photo\":\"").Append(JsonEscape(node.photoBase64 ?? "")).Append("\"");
+                        sb.Append("}");
+                    }
+                    sb.Append("],\"edges\":[");
+                    first = true;
+                    foreach (var edge in graph.edges)
+                    {
+                        if (!first) sb.Append(",");
+                        first = false;
+                        sb.Append("{");
+                        sb.Append("\"sourceId\":").Append(edge.sourceId).Append(",");
+                        sb.Append("\"targetId\":").Append(edge.targetId).Append(",");
+                        sb.Append("\"strength\":").Append(edge.strength.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(",");
+                        sb.Append("\"type\":\"").Append(JsonEscape(edge.type)).Append("\",");
+                        sb.Append("\"mutual\":").Append(edge.mutual ? "true" : "false");
+                        sb.Append("}");
+                    }
+                    sb.Append("]}");
+                    WriteJson(writer, 200, sb.ToString());
+                }
+                else
+                {
+                    WriteSimpleResponse(writer, 400, "Bad Request", "Invalid NPC ID");
+                }
+                return;
+            }
+
+            // Relationship graph for entire city
+            if (target.StartsWith("/api/relationships/city", StringComparison.OrdinalIgnoreCase))
+            {
+                var maxStr = GetQueryValue(target, "max");
+                int maxNodes = 50;
+                if (!string.IsNullOrEmpty(maxStr) && int.TryParse(maxStr, out int parsedMax))
+                {
+                    maxNodes = Math.Min(parsedMax, 200); // Max 200 nodes
+                }
+
+                var graph = RelationshipTracker.GetCityRelationshipGraph(maxNodes);
+                var sb = new StringBuilder();
+                sb.Append("{\"nodes\":[");
+                bool first = true;
+                foreach (var node in graph.nodes)
+                {
+                    if (!first) sb.Append(",");
+                    first = false;
+                    sb.Append("{");
+                    sb.Append("\"id\":").Append(node.id).Append(",");
+                    sb.Append("\"name\":\"").Append(JsonEscape(node.name)).Append("\",");
+                    sb.Append("\"occupation\":\"").Append(JsonEscape(node.occupation)).Append("\",");
+                    sb.Append("\"connectionCount\":").Append(node.connectionCount).Append(",");
+                    sb.Append("\"photo\":\"").Append(JsonEscape(node.photoBase64 ?? "")).Append("\"");
+                    sb.Append("}");
+                }
+                sb.Append("],\"edges\":[");
+                first = true;
+                foreach (var edge in graph.edges)
+                {
+                    if (!first) sb.Append(",");
+                    first = false;
+                    sb.Append("{");
+                    sb.Append("\"sourceId\":").Append(edge.sourceId).Append(",");
+                    sb.Append("\"targetId\":").Append(edge.targetId).Append(",");
+                    sb.Append("\"strength\":").Append(edge.strength.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(",");
+                    sb.Append("\"type\":\"").Append(JsonEscape(edge.type)).Append("\",");
+                    sb.Append("\"mutual\":").Append(edge.mutual ? "true" : "false");
+                    sb.Append("}");
+                }
+                sb.Append("]}");
+                WriteJson(writer, 200, sb.ToString());
+                return;
+            }
+
             // List NPCs
             if (target.Equals("/api/npcs", StringComparison.OrdinalIgnoreCase))
             {

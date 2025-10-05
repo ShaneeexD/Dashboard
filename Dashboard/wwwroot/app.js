@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-  const views = ['home','console','npcs','addresses','player','map','stats','methods','settings'];
+  const views = ['home','console','npcs','relationships','addresses','player','map','stats','methods','settings'];
   const els = {
     navItems: Array.from(document.querySelectorAll('.nav-item')),
     viewTitle: document.getElementById('view-title'),
@@ -247,6 +247,7 @@
       home: 'Overview',
       console: 'Console',
       npcs: 'NPCs',
+      relationships: 'Relationship Graph',
       addresses: 'Addresses',
       player: 'Player',
       map: 'Map',

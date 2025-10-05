@@ -99,8 +99,8 @@ namespace Dashboard
                                     var resident = new ResidentInfo
                                     {
                                         id = citizen.humanID,
-                                        name = citizen.GetCitizenName() ?? string.Empty,
-                                        surname = citizen.GetSurName() ?? string.Empty,
+                                        name = citizen.firstName ?? string.Empty,
+                                        surname = citizen.surName ?? string.Empty,
                                         photoBase64 = NpcCache.GetPhotoBase64(citizen),
                                         jobTitle = jobTitle
                                     };
@@ -123,7 +123,7 @@ namespace Dashboard
                                         {
                                             id = human.humanID,
                                             name = SafeToString(() => human.firstName),
-                                            surname = string.Empty, // Base Human doesn't have surname
+                                            surname = SafeToString(() => human.surName),
                                             photoBase64 = NpcCache.GetPhotoBase64(human),
                                             jobTitle = jobTitle
                                         };

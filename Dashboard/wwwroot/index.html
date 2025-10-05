@@ -57,6 +57,9 @@
         <a class="nav-item" href="?view=npcs" data-view="npcs">
           <span>NPCs</span>
         </a>
+        <a class="nav-item" href="?view=relationships" data-view="relationships">
+          <span>Relationships</span>
+        </a>
         <a class="nav-item" href="?view=addresses" data-view="addresses">
           <span>Addresses</span>
         </a>
@@ -162,6 +165,65 @@
           <button id="npc-refresh" class="btn">Refresh</button>
         </div>
         <div id="npc-list" class="npc-list"></div>
+      </section>
+
+      <section id="view-relationships" class="view">
+        <div class="toolbar" style="display:flex; gap:12px; align-items:center">
+          <label class="metric-label">View:
+            <select id="rel-view-type" class="input" style="margin-left:8px">
+              <option value="city">City (50 NPCs)</option>
+              <option value="npc">Specific NPC</option>
+            </select>
+          </label>
+          <input id="rel-npc-id" class="input" type="number" placeholder="NPC ID" style="width:120px; display:none" />
+          <button id="rel-load" class="btn">Load Graph</button>
+          <div class="spacer"></div>
+          <label class="metric-label">
+            <input type="checkbox" id="rel-show-labels" checked> Show Labels
+          </label>
+        </div>
+        <div id="rel-stats" style="padding:12px; display:none">
+          <span class="metric-label" style="margin-right:16px">Nodes: <strong id="rel-node-count">0</strong></span>
+          <span class="metric-label">Connections: <strong id="rel-edge-count">0</strong></span>
+        </div>
+        <div style="display:flex; gap:16px">
+          <canvas id="rel-canvas" style="flex:1; height:calc(100vh - 240px); background:rgba(0,0,0,0.2); border-radius:8px; cursor:grab"></canvas>
+          <div class="card" style="width:250px; padding:16px; height:fit-content">
+            <div class="card-title">Legend</div>
+            <div style="margin-top:12px; font-size:12px">
+              <div style="font-weight:600; margin-bottom:8px">Relationship Types:</div>
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px">
+                <div style="width:30px; height:3px; background:rgb(255, 100, 150)"></div>
+                <span>Romantic (partners)</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px">
+                <div style="width:30px; height:3px; background:rgb(100, 200, 100)"></div>
+                <span>Roommate (same home)</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px">
+                <div style="width:30px; height:3px; background:rgb(100, 150, 255)"></div>
+                <span>Colleague (coworkers)</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px">
+                <div style="width:30px; height:3px; background:rgb(255, 200, 100)"></div>
+                <span>Friend (close)</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px">
+                <div style="width:30px; height:3px; background:rgb(150, 150, 150)"></div>
+                <span>Acquaintance</span>
+              </div>
+              <div style="font-weight:600; margin-bottom:8px">Connection Properties:</div>
+              <div style="margin-bottom:4px">• <strong>Thickness:</strong> Relationship strength</div>
+              <div style="margin-bottom:4px">• <strong>Brightness:</strong> Mutual (both know each other)</div>
+              <div style="margin-bottom:4px">• <strong>Node size:</strong> Number of connections</div>
+              <div style="margin-bottom:4px">• <strong>Node color:</strong> Connection count</div>
+              <div style="margin-top:12px; padding:8px; background:rgba(109,197,255,0.1); border-radius:6px; font-size:11px; color:var(--muted)">
+                💡 Drag nodes to rearrange the graph
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="rel-tooltip" style="position:absolute; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 12px; pointer-events:none; display:none; font-size:12px; box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
       </section>
 
       <section id="view-addresses" class="view">
@@ -345,5 +407,6 @@ Note: Use the Method Browser tab for more advanced searching and parameter help.
   </div>
 
   <script src="./app.js"></script>
+  <script src="./app_relationships.js"></script>
 </body>
 </html>

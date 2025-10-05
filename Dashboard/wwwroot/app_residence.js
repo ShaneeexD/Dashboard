@@ -88,9 +88,11 @@
       if(!res.ok) throw 0;
       els.healthDot.style.background = '#11d67a';
       els.healthText.textContent = 'Online';
+      els.healthText.className = 'status-text status-online';
     }catch{
       els.healthDot.style.background = '#e05555';
       els.healthText.textContent = 'Offline';
+      els.healthText.className = 'status-text status-offline';
     }
   }
 

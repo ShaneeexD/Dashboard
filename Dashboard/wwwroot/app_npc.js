@@ -119,9 +119,11 @@
       if(!res.ok) throw 0;
       els.dot.style.background = '#11d67a';
       els.text.textContent = 'Online';
+      els.text.className = 'status-text status-online';
     }catch{
       els.dot.style.background = '#e05555';
       els.text.textContent = 'Offline';
+      els.text.className = 'status-text status-offline';
     }
   }
 
